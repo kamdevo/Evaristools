@@ -1,11 +1,13 @@
 import { useState, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Loader2, Download, FileDown, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, Download, FileDown, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import axios from 'axios';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 export default function PowerPointToPDF() {
     const [pptFile, setPptFile] = useState<File | null>(null);
@@ -14,6 +16,37 @@ export default function PowerPointToPDF() {
     const [error, setError] = useState<string>('');
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="left-column"]',
+                    popover: {
+                        title: 'Paso 1: Seleccionar PowerPoint',
+                        description: 'Arrastra tu presentación PowerPoint (.ppt o .pptx) aquí o haz clic para seleccionarla. Tamaño máximo: 25MB.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 2: Convertir a PDF',
+                        description: 'Una vez cargada tu presentación, haz clic en "Convertir a PDF". La conversión se procesará y el archivo se descargará automáticamente.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = (files: FileList) => {
         const file = files[0];
@@ -129,11 +162,12 @@ export default function PowerPointToPDF() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {/* Upload Section */}
-                            {!pptFile && (
+                            {/* Left Column: File Upload & Messages */}
+                            <div className="space-y-6" data-tour="left-column">
+                                {!pptFile && (
                                 <ToolCard title="Seleccionar PowerPoint">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
@@ -161,9 +195,7 @@ export default function PowerPointToPDF() {
                                 </ToolCard>
                             )}
 
-                            {/* File Info */}
-                            {pptFile && !isConverted && (
-                                <>
+                                {pptFile && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -179,13 +211,44 @@ export default function PowerPointToPDF() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                                {isConverted && (
+                                    <ToolCard title="¡Conversión Exitosa!">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡PDF generado y descargado exitosamente!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        El archivo se ha guardado en tu carpeta de descargas.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                onClick={resetTool}
+                                                variant="outline"
+                                                className="w-full"
+                                            >
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                Convertir Otro Archivo
+                                            </Button>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Actions and Instructions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Acciones" data-tour="actions">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <Button
                                                 onClick={convertToPDF}
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !pptFile}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
                                             >
                                                 {isProcessing ? (
@@ -210,37 +273,17 @@ export default function PowerPointToPDF() {
                                                 Seleccionar Otro
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
-
-                            {/* Success Message */}
-                            {isConverted && (
-                                <ToolCard title="¡Conversión Exitosa!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡PDF generado y descargado exitosamente!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    El archivo se ha guardado en tu carpeta de descargas.
-                                                </p>
-                                            </div>
-                                        </div>
-
                                         <Button
-                                            onClick={resetTool}
+                                            onClick={startTour}
                                             variant="outline"
-                                            className="w-full"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
                                         >
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            Convertir Otro Archivo
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
                                         </Button>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

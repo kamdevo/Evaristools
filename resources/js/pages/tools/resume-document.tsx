@@ -3,11 +3,13 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, Loader2, Sparkles, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { Upload, FileText, Loader2, Sparkles, CheckCircle, AlertCircle, Copy, HelpCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import axios from 'axios';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 type SummaryLength = 'short' | 'medium' | 'long';
 
@@ -27,6 +29,46 @@ export default function ResumeDocument() {
         language: 'es'
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="left-column"]',
+                    popover: {
+                        title: 'Paso 1: Seleccionar Documento',
+                        description: 'En esta columna, arrastra tu documento o haz clic en la zona de carga. Acepta PDF, Word (.docx, .doc) y archivos de texto (.txt) hasta 10MB. Aquí también verás el resumen generado.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Resumen',
+                        description: 'Selecciona la longitud deseada del resumen (corto, medio o largo) y el idioma en que quieres que se genere.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Generar Resumen',
+                        description: 'Haz clic en "Generar Resumen" para procesar tu documento. El resumen aparecerá en la columna izquierda y podrás copiarlo con un solo clic.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = (files: FileList) => {
         const selectedFile = files[0];
@@ -143,12 +185,14 @@ export default function ResumeDocument() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {/* Upload Section */}
-                            {!file && (
-                                <ToolCard title="Seleccionar Documento">
+                            {/* Left Column: File Upload & Messages */}
+                            <div className="space-y-6" data-tour="left-column">
+                                {/* Upload Section */}
+                                {!file && (
+                                    <ToolCard title="Seleccionar Documento" data-tour="upload-zone">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
                                         acceptedTypes=".pdf,.docx,.doc,.txt"
@@ -163,21 +207,19 @@ export default function ResumeDocument() {
                                         className="hidden"
                                     />
                                 </ToolCard>
-                            )}
+                                )}
 
-                            {/* Error Message */}
-                            {error && (
-                                <ToolCard title="Error">
-                                    <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
-                                        <p className="text-red-800 dark:text-red-200">{error}</p>
-                                    </div>
-                                </ToolCard>
-                            )}
+                                {/* Error Message */}
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
 
-                            {/* File Info and Options */}
-                            {file && !summary && (
-                                <>
+                                {file && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -193,9 +235,49 @@ export default function ResumeDocument() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Summary Options */}
-                                    <ToolCard title="Opciones de Resumen">
+                                {summary && (
+                                    <ToolCard title="Resumen Generado">
+                                        <div className="space-y-4">
+                                            <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                                <div className="prose prose-slate dark:prose-invert max-w-none">
+                                                    {summary.split('\n').map((paragraph, index) => (
+                                                        paragraph.trim() && (
+                                                            <p key={index} className="text-slate-900 dark:text-white mb-3 last:mb-0">
+                                                                {paragraph}
+                                                            </p>
+                                                        )
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row gap-4">
+                                                <Button
+                                                    onClick={copyToClipboard}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    <Copy className="mr-2 h-4 w-4" />
+                                                    {copied ? '¡Copiado!' : 'Copiar Resumen'}
+                                                </Button>
+                                                <Button
+                                                    onClick={resetTool}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    <Upload className="mr-2 h-4 w-4" />
+                                                    Resumir Otro Documento
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Options and Actions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Opciones de Resumen" data-tour="options">
                                         <div className="space-y-4">
                                             {/* Length */}
                                             <div className="space-y-2">
@@ -232,14 +314,14 @@ export default function ResumeDocument() {
                                                 </Select>
                                             </div>
                                         </div>
-                                    </ToolCard>
+                                </ToolCard>
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                                <ToolCard title="Acciones" data-tour="actions">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <Button
                                                 onClick={generateSummary}
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !file}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
                                             >
                                                 {isProcessing ? (
@@ -258,53 +340,23 @@ export default function ResumeDocument() {
                                                 onClick={resetTool}
                                                 variant="outline"
                                                 className="flex-1"
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !file}
                                             >
                                                 <Upload className="mr-2 h-4 w-4" />
                                                 Seleccionar Otro
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
-
-                            {/* Summary Result */}
-                            {summary && (
-                                <ToolCard title="Resumen Generado">
-                                    <div className="space-y-4">
-                                        <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                                            <div className="prose prose-slate dark:prose-invert max-w-none">
-                                                {summary.split('\n').map((paragraph, index) => (
-                                                    paragraph.trim() && (
-                                                        <p key={index} className="text-slate-900 dark:text-white mb-3 last:mb-0">
-                                                            {paragraph}
-                                                        </p>
-                                                    )
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                onClick={copyToClipboard}
-                                                variant="outline"
-                                                className="flex-1"
-                                            >
-                                                <Copy className="mr-2 h-4 w-4" />
-                                                {copied ? '¡Copiado!' : 'Copiar Resumen'}
-                                            </Button>
-                                            <Button
-                                                onClick={resetTool}
-                                                variant="outline"
-                                                className="flex-1"
-                                            >
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Resumir Otro Documento
-                                            </Button>
-                                        </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

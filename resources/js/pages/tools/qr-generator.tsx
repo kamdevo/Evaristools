@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Share2, Copy, RefreshCw, ScanQrCode, Building2 } from 'lucide-react';
+import { Download, Share2, Copy, RefreshCw, ScanQrCode, Building2, HelpCircle } from 'lucide-react';
 import QRCodeLib from 'qrcode';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface QRData {
     text: string;
@@ -33,6 +35,46 @@ export default function QRGenerator() {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="config"]',
+                    popover: {
+                        title: 'Paso 1: Configurar Contenido',
+                        description: 'Ingresa el texto, URL o contenido que quieres convertir en código QR. Usa las pestañas para cambiar entre texto simple, URLs o configuraciones avanzadas (tamaño, colores, logo institucional).',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="action"]',
+                    popover: {
+                        title: 'Paso 2: Generar Código QR',
+                        description: 'Una vez configurado tu contenido, haz clic en "Generar Código QR" para crear tu código. El botón solo estará activo cuando hayas ingresado algún contenido.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="preview"]',
+                    popover: {
+                        title: 'Paso 3: Descargar o Copiar',
+                        description: 'Tu código QR aparecerá en la vista previa. Podrás descargarlo en el formato que elegiste (PNG, JPEG, SVG) o copiarlo directamente al portapapeles.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const generateQR = async () => {
         if (!qrData.text.trim()) {
@@ -254,6 +296,7 @@ export default function QRGenerator() {
                                 <ToolCard
                                     title="Configuración del QR"
                                     description="Personaliza tu código QR con las opciones disponibles"
+                                    data-tour="config"
                                 >
                                 <Tabs defaultValue="text" className="w-full">
                                     <TabsList className="grid w-full grid-cols-3">
@@ -356,24 +399,36 @@ export default function QRGenerator() {
                                         </div>
                                     </TabsContent>
                                 </Tabs>
+                                </ToolCard>
 
-                                    <Button
-                                        onClick={generateQR}
-                                        disabled={isLoading || !qrData.text.trim()}
-                                        className="w-full bg-institutional hover:bg-institutional/90"
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                                Generando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ScanQrCode className="mr-2 h-4 w-4" />
-                                                Generar Código QR
-                                            </>
-                                        )}
-                                    </Button>
+                                <ToolCard title="Acción" data-tour="action">
+                                    <div className="space-y-3">
+                                        <Button
+                                            onClick={generateQR}
+                                            disabled={isLoading || !qrData.text.trim()}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                                    Generando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ScanQrCode className="mr-2 h-4 w-4" />
+                                                    Generar Código QR
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
+                                    </div>
                                 </ToolCard>
                             </div>
 
@@ -382,6 +437,7 @@ export default function QRGenerator() {
                                 <ToolCard
                                     title="Vista Previa"
                                     description="Tu código QR generado aparecerá aquí"
+                                    data-tour="preview"
                                 >
                                     <div className="flex flex-col items-center space-y-6">
                                         {qrCodeUrl ? (

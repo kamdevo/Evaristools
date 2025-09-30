@@ -3,9 +3,11 @@ import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, FolderOutput, Download, Upload, Loader2, Building2, X, FileText, Scissors } from 'lucide-react';
+import { ArrowLeft, FolderOutput, Download, Upload, Loader2, Building2, X, FileText, Scissors, HelpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PDFDocument } from 'pdf-lib';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface SplitOptions {
     method: 'pages' | 'ranges' | 'size';
@@ -36,6 +38,46 @@ export default function SplitPDF() {
     
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Arrastra tu archivo PDF aquí o haz clic para subirlo. El sistema detectará automáticamente el número total de páginas.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar División',
+                        description: 'Elige cómo dividir el PDF: por número de páginas por archivo o por rangos personalizados (ej: 1-5, 6-10).',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Dividir PDF',
+                        description: 'Haz clic en "Dividir PDF" para procesar. Podrás descargar cada archivo individualmente o todos juntos en un ZIP.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = async (selectedFile: File) => {
         if (selectedFile.type !== 'application/pdf') {
@@ -324,7 +366,7 @@ export default function SplitPDF() {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             {/* Upload Section */}
                             <div className="space-y-6">
-                                <Card>
+                                <Card data-tour="upload">
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
                                             <Upload className="h-5 w-5" />
@@ -483,7 +525,7 @@ export default function SplitPDF() {
 
                             {/* Options and Process Section */}
                             <div className="space-y-6">
-                                <Card>
+                                <Card data-tour="options">
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
                                             <Scissors className="h-5 w-5" />
@@ -571,47 +613,32 @@ export default function SplitPDF() {
                                             )}
                                         </div>
 
-                                        <Button
-                                            onClick={splitPDF}
-                                            disabled={!file || isProcessing}
-                                            className="w-full bg-institutional hover:bg-institutional/90"
-                                        >
-                                            {isProcessing ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                    {processingStep}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Scissors className="h-4 w-4 mr-2" />
-                                                    Dividir PDF
-                                                </>
-                                            )}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Instructions */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Instrucciones</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 text-sm">
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">1.</span>
-                                            <span>Sube el archivo PDF que deseas dividir</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">2.</span>
-                                            <span>Elige el método: por páginas o rangos específicos</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">3.</span>
-                                            <span>Configura las opciones según tus necesidades</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">4.</span>
-                                            <span>Haz clic en "Dividir PDF" y descarga los archivos resultantes</span>
+                                        <div className="space-y-3" data-tour="actions">
+                                            <Button
+                                                onClick={splitPDF}
+                                                disabled={!file || isProcessing}
+                                                className="w-full bg-institutional hover:bg-institutional/90"
+                                            >
+                                                {isProcessing ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        {processingStep}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Scissors className="h-4 w-4 mr-2" />
+                                                        Dividir PDF
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                onClick={startTour}
+                                                variant="outline"
+                                                className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                            >
+                                                <HelpCircle className="mr-2 h-4 w-4" />
+                                                ¿Cómo funciona? - Tour Interactivo
+                                            </Button>
                                         </div>
                                     </CardContent>
                                 </Card>

@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 
-import { ArrowLeft, FileUp, Download, Upload, Loader2, Building2, X, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileUp, Download, Upload, Loader2, Building2, X, GripVertical, Plus, Trash2, HelpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PDFDocument } from 'pdf-lib';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface MergeOptions {
     preserveBookmarks: boolean;
@@ -36,6 +38,46 @@ export default function MergePDFs() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
     const draggedIndex = useRef<number | null>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Agregar PDFs',
+                        description: 'Arrastra múltiples archivos PDF aquí o usa el botón "Agregar PDFs". Puedes añadir tantos archivos como necesites y reordenarlos.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Opciones',
+                        description: 'Elige si deseas preservar marcadores y metadatos, o agregar números de página al PDF combinado.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Unir PDFs',
+                        description: 'Una vez agregados al menos 2 archivos PDF, haz clic en "Unir PDFs" para combinarlos en un solo documento.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -315,7 +357,7 @@ export default function MergePDFs() {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             {/* Upload Section */}
                             <div className="space-y-6">
-                                <Card>
+                                <Card data-tour="upload">
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
                                             <Upload className="h-5 w-5" />
@@ -484,7 +526,7 @@ export default function MergePDFs() {
 
                             {/* Options and Process Section */}
                             <div className="space-y-6">
-                                <Card>
+                                <Card data-tour="options">
                                     <CardHeader>
                                         <CardTitle className="flex items-center space-x-2">
                                             <FileUp className="h-5 w-5" />
@@ -551,47 +593,32 @@ export default function MergePDFs() {
                                             </div>
                                         </div>
 
-                                        <Button
-                                            onClick={mergePDFs}
-                                            disabled={files.length < 2 || isProcessing}
-                                            className="w-full bg-institutional hover:bg-institutional/90"
-                                        >
-                                            {isProcessing ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                    {processingStep}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FileUp className="h-4 w-4 mr-2" />
-                                                    Unir PDFs
-                                                </>
-                                            )}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Instructions */}
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Instrucciones</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 text-sm">
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">1.</span>
-                                            <span>Arrastra múltiples archivos PDF o usa el botón "Agregar PDFs"</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">2.</span>
-                                            <span>Reordena los archivos arrastrándolos o usando las flechas</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">3.</span>
-                                            <span>Configura las opciones de unión según tus necesidades</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">4.</span>
-                                            <span>Haz clic en "Unir PDFs" y descarga el resultado</span>
+                                        <div className="space-y-3" data-tour="actions">
+                                            <Button
+                                                onClick={mergePDFs}
+                                                disabled={files.length < 2 || isProcessing}
+                                                className="w-full bg-institutional hover:bg-institutional/90"
+                                            >
+                                                {isProcessing ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                        {processingStep}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FileUp className="h-4 w-4 mr-2" />
+                                                        Unir PDFs
+                                                    </>
+                                                )}
+                                            </Button>
+                                            <Button
+                                                onClick={startTour}
+                                                variant="outline"
+                                                className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                            >
+                                                <HelpCircle className="mr-2 h-4 w-4" />
+                                                ¿Cómo funciona? - Tour Interactivo
+                                            </Button>
                                         </div>
                                     </CardContent>
                                 </Card>

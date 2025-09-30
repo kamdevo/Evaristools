@@ -3,11 +3,13 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, Loader2, Download, Hash, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, Download, Hash, CheckCircle, HelpCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface PageNumberOptions {
     position: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
@@ -30,6 +32,42 @@ export default function PageNumbers() {
         fontSize: 12
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            steps: [
+                {
+                    element: '[data-tour="upload-zone"]',
+                    popover: {
+                        title: 'Paso 1: Seleccionar PDF',
+                        description: 'Arrastra tu archivo PDF aquí o haz clic para seleccionarlo. El archivo debe ser menor a 50MB.',
+                        side: 'bottom',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Opciones',
+                        description: 'Personaliza la posición, formato, tamaño de fuente y número de inicio para los números de página.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Aplicar Números',
+                        description: 'Haz clic en "Agregar Números de Página" para procesar tu documento. Una vez completado, podrás descargarlo.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = (files: FileList) => {
         const file = files[0];
@@ -198,39 +236,31 @@ export default function PageNumbers() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
-                            {/* Upload Section */}
-                            {!pdfFile && (
-                                <ToolCard title="Seleccionar PDF">
-                                    <FileUploadZone
-                                        onFileSelect={handleFileSelect}
-                                        acceptedTypes=".pdf"
-                                        title="Arrastra tu PDF aquí"
-                                        subtitle="o haz clic para seleccionar (máximo 50MB)"
-                                    />
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
-                                        className="hidden"
-                                    />
-                                </ToolCard>
-                            )}
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            {/* Left Column: File Upload & Messages */}
+                            <div className="space-y-6">
+                                {/* Upload Section */}
+                                {!pdfFile && (
+                                    <ToolCard title="Seleccionar PDF" data-tour="upload-zone">
+                                        <FileUploadZone
+                                            onFileSelect={handleFileSelect}
+                                            acceptedTypes=".pdf"
+                                            title="Arrastra tu PDF aquí"
+                                            subtitle="o haz clic para seleccionar (máximo 50MB)"
+                                        />
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
+                                            className="hidden"
+                                        />
+                                    </ToolCard>
+                                )}
 
-                            {/* Error Message */}
-                            {error && (
-                                <ToolCard title="Error">
-                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                        <p className="text-red-800 dark:text-red-200">{error}</p>
-                                    </div>
-                                </ToolCard>
-                            )}
-
-                            {/* File Info and Options */}
-                            {pdfFile && !isNumbered && (
-                                <>
+                                {/* File Info */}
+                                {pdfFile && !isNumbered && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -246,96 +276,147 @@ export default function PageNumbers() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Options */}
-                                    <ToolCard title="Opciones de Numeración">
+                                {/* Error Message */}
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
+
+                                {/* Success Message */}
+                                {isNumbered && numberedPdfUrl && (
+                                    <ToolCard title="¡Números de Página Agregados!">
                                         <div className="space-y-4">
-                                            {/* Position */}
-                                            <div className="space-y-2">
-                                                <Label>Posición</Label>
-                                                <Select
-                                                    value={options.position}
-                                                    onValueChange={(value) => setOptions({ ...options, position: value as any })}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="top-left">Superior Izquierda</SelectItem>
-                                                        <SelectItem value="top-center">Superior Centro</SelectItem>
-                                                        <SelectItem value="top-right">Superior Derecha</SelectItem>
-                                                        <SelectItem value="bottom-left">Inferior Izquierda</SelectItem>
-                                                        <SelectItem value="bottom-center">Inferior Centro</SelectItem>
-                                                        <SelectItem value="bottom-right">Inferior Derecha</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡Los números de página se agregaron correctamente!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        Descarga tu PDF numerado o procesa otro archivo.
+                                                    </p>
+                                                </div>
                                             </div>
 
-                                            {/* Format */}
-                                            <div className="space-y-2">
-                                                <Label>Formato</Label>
-                                                <Select
-                                                    value={options.format}
-                                                    onValueChange={(value) => setOptions({ ...options, format: value as any })}
+                                            <div className="flex flex-col sm:flex-row gap-4">
+                                                <Button
+                                                    onClick={downloadNumberedPDF}
+                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                                                 >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="number">Solo Número (1, 2, 3...)</SelectItem>
-                                                        <SelectItem value="page-of-total">Página de Total (1 de 10)</SelectItem>
-                                                        <SelectItem value="roman">Números Romanos (i, ii, iii...)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            {/* Font Size */}
-                                            <div className="space-y-2">
-                                                <Label>Tamaño de Fuente</Label>
-                                                <Select
-                                                    value={options.fontSize.toString()}
-                                                    onValueChange={(value) => setOptions({ ...options, fontSize: parseInt(value) })}
+                                                    <Download className="mr-2 h-4 w-4" />
+                                                    Descargar PDF Numerado
+                                                </Button>
+                                                <Button
+                                                    onClick={resetTool}
+                                                    variant="outline"
+                                                    className="flex-1"
                                                 >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="10">10pt</SelectItem>
-                                                        <SelectItem value="12">12pt</SelectItem>
-                                                        <SelectItem value="14">14pt</SelectItem>
-                                                        <SelectItem value="16">16pt</SelectItem>
-                                                        <SelectItem value="18">18pt</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            {/* Start Number */}
-                                            <div className="space-y-2">
-                                                <Label>Número de Inicio</Label>
-                                                <Select
-                                                    value={options.startNumber.toString()}
-                                                    onValueChange={(value) => setOptions({ ...options, startNumber: parseInt(value) })}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="1">1</SelectItem>
-                                                        <SelectItem value="0">0</SelectItem>
-                                                        <SelectItem value="2">2</SelectItem>
-                                                        <SelectItem value="3">3</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                    <Upload className="mr-2 h-4 w-4" />
+                                                    Numerar Otro PDF
+                                                </Button>
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
+                            </div>
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                            {/* Right Column: Always visible Options, Actions & Instructions */}
+                            <div className="space-y-6">
+                                {/* Options */}
+                                <ToolCard title="Opciones de Numeración" data-tour="options">
+                                    <div className="space-y-4">
+                                        {/* Position */}
+                                        <div className="space-y-2">
+                                            <Label>Posición</Label>
+                                            <Select
+                                                value={options.position}
+                                                onValueChange={(value) => setOptions({ ...options, position: value as any })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="top-left">Superior Izquierda</SelectItem>
+                                                    <SelectItem value="top-center">Superior Centro</SelectItem>
+                                                    <SelectItem value="top-right">Superior Derecha</SelectItem>
+                                                    <SelectItem value="bottom-left">Inferior Izquierda</SelectItem>
+                                                    <SelectItem value="bottom-center">Inferior Centro</SelectItem>
+                                                    <SelectItem value="bottom-right">Inferior Derecha</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Format */}
+                                        <div className="space-y-2">
+                                            <Label>Formato</Label>
+                                            <Select
+                                                value={options.format}
+                                                onValueChange={(value) => setOptions({ ...options, format: value as any })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="number">Solo Número (1, 2, 3...)</SelectItem>
+                                                    <SelectItem value="page-of-total">Página de Total (1 de 10)</SelectItem>
+                                                    <SelectItem value="roman">Números Romanos (i, ii, iii...)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Font Size */}
+                                        <div className="space-y-2">
+                                            <Label>Tamaño de Fuente</Label>
+                                            <Select
+                                                value={options.fontSize.toString()}
+                                                onValueChange={(value) => setOptions({ ...options, fontSize: parseInt(value) })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="10">10pt</SelectItem>
+                                                    <SelectItem value="12">12pt</SelectItem>
+                                                    <SelectItem value="14">14pt</SelectItem>
+                                                    <SelectItem value="16">16pt</SelectItem>
+                                                    <SelectItem value="18">18pt</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Start Number */}
+                                        <div className="space-y-2">
+                                            <Label>Número de Inicio</Label>
+                                            <Select
+                                                value={options.startNumber.toString()}
+                                                onValueChange={(value) => setOptions({ ...options, startNumber: parseInt(value) })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1">1</SelectItem>
+                                                    <SelectItem value="0">0</SelectItem>
+                                                    <SelectItem value="2">2</SelectItem>
+                                                    <SelectItem value="3">3</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </ToolCard>
+
+                                {/* Action Buttons */}
+                                <ToolCard title="Acciones" data-tour="actions">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <Button
                                                 onClick={addPageNumbers}
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !pdfFile}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
                                             >
                                                 {isProcessing ? (
@@ -360,46 +441,19 @@ export default function PageNumbers() {
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
-
-                            {/* Success Message */}
-                            {isNumbered && numberedPdfUrl && (
-                                <ToolCard title="¡Números de Página Agregados!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡Los números de página se agregaron correctamente!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    Descarga tu PDF numerado o procesa otro archivo.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                onClick={downloadNumberedPDF}
-                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                                            >
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Descargar PDF Numerado
-                                            </Button>
-                                            <Button
-                                                onClick={resetTool}
-                                                variant="outline"
-                                                className="flex-1"
-                                            >
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Numerar Otro PDF
-                                            </Button>
-                                        </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
                                     </div>
                                 </ToolCard>
-                            )}
+
+
+                            </div>
                         </div>
                     </div>
                 </div>

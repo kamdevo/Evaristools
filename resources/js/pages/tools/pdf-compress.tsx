@@ -3,11 +3,13 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Download, Upload, Loader2, Zap } from 'lucide-react';
+import { FileText, Download, Upload, Loader2, Zap, HelpCircle } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface CompressionOptions {
     quality: 'low' | 'medium' | 'high';
@@ -30,6 +32,46 @@ export default function PDFCompress() {
     
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dropZoneRef = useRef<HTMLDivElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Arrastra tu archivo PDF aquí o haz clic para seleccionarlo. El sistema analizará el tamaño original para mostrar la reducción.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Compresión',
+                        description: 'Selecciona la calidad de compresión y opciones adicionales como remover metadatos u optimizar imágenes.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Comprimir y Descargar',
+                        description: 'Haz clic en "Comprimir PDF" para procesar. Verás el porcentaje de reducción y podrás descargar el archivo comprimido.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const formatFileSize = (bytes: number): string => {
         if (bytes === 0) return '0 Bytes';
@@ -212,87 +254,41 @@ export default function PDFCompress() {
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {/* Upload Section */}
-                            <div className="space-y-6">
+                            {/* Left Column: File Upload & Messages */}
+                            <div className="space-y-6" data-tour="upload">
                                 <ToolCard
                                     title="Subir PDF"
                                     description="Selecciona o arrastra tu archivo PDF para comprimir"
                                     icon={Upload}
                                 >
-                                    {/* Drag & Drop Zone */}
-                                    <div
-                                        ref={dropZoneRef}
-                                        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                                            file ? 'border-institutional bg-institutional/5' : 'border-slate-300 hover:border-institutional'
-                                        }`}
-                                        onDragOver={handleDragOver}
-                                        onDragEnter={handleDragEnter}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={handleDrop}
-                                    >
-                                        {file ? (
-                                            <div className="space-y-2">
-                                                <FileText className="h-12 w-12 mx-auto text-institutional" />
-                                                <p className="font-medium text-slate-900 dark:text-white">
-                                                    {file.name}
-                                                </p>
-                                                <p className="text-sm text-slate-600 dark:text-slate-300">
-                                                    Tamaño: {formatFileSize(originalSize)}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4">
-                                                <Upload className="h-12 w-12 mx-auto text-slate-400" />
-                                                <div>
-                                                    <p className="text-lg font-medium text-slate-900 dark:text-white">
-                                                        Arrastra tu PDF aquí
-                                                    </p>
-                                                    <p className="text-sm text-slate-600 dark:text-slate-300">
-                                                        o haz clic para seleccionar
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept=".pdf,application/pdf"
-                                        onChange={(e) => {
-                                            const selectedFile = e.target.files?.[0];
-                                            if (selectedFile) handleFileSelect(selectedFile);
-                                        }}
-                                        className="hidden"
+                                    <FileUploadZone
+                                        onFileSelect={(files) => handleFileSelect(files[0])}
+                                        acceptedTypes=".pdf"
                                     />
 
-                                    <Button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        variant="outline"
-                                        className="w-full"
-                                    >
-                                        Seleccionar Archivo PDF
-                                    </Button>
-
                                     {file && (
-                                        <Button
-                                            onClick={reset}
-                                            variant="outline"
-                                            className="w-full"
-                                        >
-                                            Cambiar Archivo
-                                        </Button>
+                                        <div className="mt-4 space-y-2">
+                                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                                <span className="font-medium">Archivo:</span> {file.name}
+                                            </p>
+                                            <p className="text-sm text-slate-600 dark:text-slate-300">
+                                                <span className="font-medium">Tamaño original:</span> {formatFileSize(originalSize)}
+                                            </p>
+                                            <Button
+                                                onClick={reset}
+                                                variant="outline"
+                                                className="w-full"
+                                            >
+                                                Cambiar Archivo
+                                            </Button>
+                                        </div>
                                     )}
                                 </ToolCard>
                             </div>
 
-                            {/* Options and Process Section */}
+                            {/* Right Column: Options & Actions */}
                             <div className="space-y-6">
-                                <ToolCard
-                                    title="Opciones de Compresión"
-                                    description="Configura cómo quieres comprimir tu PDF"
-                                    icon={Zap}
-                                >
+                                <ToolCard title="Opciones de Compresión" data-tour="options">
                                     <div className="space-y-4">
                                         <div>
                                             <Label htmlFor="quality">Nivel de Compresión</Label>
@@ -339,24 +335,37 @@ export default function PDFCompress() {
                                             <Label htmlFor="optimizeImages">Optimizar imágenes</Label>
                                         </div>
                                     </div>
+                                </ToolCard>
 
-                                    <Button
-                                        onClick={compressPDF}
-                                        disabled={!file || isProcessing}
-                                        className="w-full bg-institutional hover:bg-institutional/90"
-                                    >
-                                        {isProcessing ? (
-                                            <>
-                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                Comprimiendo...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Zap className="h-4 w-4 mr-2" />
-                                                Comprimir PDF
-                                            </>
-                                        )}
-                                    </Button>
+                                <ToolCard title="Acciones">
+
+                                    <div className="space-y-3" data-tour="actions">
+                                        <Button
+                                            onClick={compressPDF}
+                                            disabled={!file || isProcessing}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            {isProcessing ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                    Comprimiendo...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Zap className="h-4 w-4 mr-2" />
+                                                    Comprimir PDF
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
+                                    </div>
 
                                     {/* Results */}
                                     {compressedPdf && (

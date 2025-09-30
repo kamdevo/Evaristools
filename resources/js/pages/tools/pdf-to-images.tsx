@@ -3,12 +3,14 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Download, FileImage, Loader2, FileDown, Archive } from 'lucide-react';
+import { Upload, Download, FileImage, Loader2, FileDown, Archive, HelpCircle } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import ProgressBar from '@/components/ProgressBar';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 // Configure PDF.js worker for Vite/local development
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -48,6 +50,42 @@ export default function PDFToImages() {
     const [progress, setProgress] = useState<Progress>({ current: 0, total: 0, message: '' });
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            steps: [
+                {
+                    element: '[data-tour="upload-zone"]',
+                    popover: {
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Arrastra tu archivo PDF aquí o haz clic para seleccionarlo. El archivo se convertirá página por página.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Opciones',
+                        description: 'Selecciona el formato (PNG o JPEG), la resolución DPI y la calidad de compresión para las imágenes resultantes.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Convertir',
+                        description: 'Haz clic en "Convertir a Imágenes" para iniciar el proceso. Verás una vista previa de cada página convertida que podrás descargar.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = async (files: FileList) => {
         const file = files[0];
@@ -195,12 +233,14 @@ export default function PDFToImages() {
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {/* Upload Section */}
+                            {/* Left Column: Upload, Progress & Results */}
                             <div className="space-y-6">
+                                {/* Upload Section */}
                                 <ToolCard
                                     title="Subir PDF"
                                     description="Selecciona un archivo PDF para convertir sus páginas a imágenes."
                                     icon={Upload}
+                                    data-tour="upload-zone"
                                 >
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
@@ -217,79 +257,6 @@ export default function PDFToImages() {
                                     />
                                 </ToolCard>
 
-                                {/* Conversion Options */}
-                                {pdfFile && (
-                                    <ToolCard
-                                        title="Opciones de Conversión"
-                                        description="Configura el formato y calidad de las imágenes"
-                                    >
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="format">Formato</Label>
-                                                <Select
-                                                    value={options.format}
-                                                    onValueChange={(value: 'png' | 'jpeg') => 
-                                                        setOptions({ ...options, format: value })
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="png">PNG (sin pérdida)</SelectItem>
-                                                        <SelectItem value="jpeg">JPEG (comprimido)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label htmlFor="dpi">Resolución (DPI)</Label>
-                                                <Select
-                                                    value={options.dpi.toString()}
-                                                    onValueChange={(value) => 
-                                                        setOptions({ ...options, dpi: parseInt(value) })
-                                                    }
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="72">72 DPI (Web)</SelectItem>
-                                                        <SelectItem value="150">150 DPI (Normal)</SelectItem>
-                                                        <SelectItem value="300">300 DPI (Alta)</SelectItem>
-                                                        <SelectItem value="600">600 DPI (Máxima)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-
-                                            {options.format === 'jpeg' && (
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="quality">Calidad JPEG</Label>
-                                                    <Select
-                                                        value={options.quality.toString()}
-                                                        onValueChange={(value) => 
-                                                            setOptions({ ...options, quality: parseFloat(value) })
-                                                        }
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="0.6">60% (Básica)</SelectItem>
-                                                            <SelectItem value="0.8">80% (Buena)</SelectItem>
-                                                            <SelectItem value="0.9">90% (Alta)</SelectItem>
-                                                            <SelectItem value="1.0">100% (Máxima)</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </ToolCard>
-                                )}
-                            </div>
-
-                            {/* Results Section */}
-                            <div className="space-y-6">
                                 {/* Progress */}
                                 {isProcessing && (
                                     <ToolCard title="Progreso de Conversión">
@@ -366,16 +333,88 @@ export default function PDFToImages() {
                                         </div>
                                     </ToolCard>
                                 )}
+                            </div>
+
+                            {/* Right Column: Always visible Options, Actions & Instructions */}
+                            <div className="space-y-6">
+                                {/* Conversion Options */}
+                                <ToolCard
+                                    title="Opciones de Conversión"
+                                    description="Configura el formato y calidad de las imágenes"
+                                    data-tour="options"
+                                >
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="format">Formato</Label>
+                                                <Select
+                                                    value={options.format}
+                                                    onValueChange={(value: 'png' | 'jpeg') => 
+                                                        setOptions({ ...options, format: value })
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="png">PNG (sin pérdida)</SelectItem>
+                                                        <SelectItem value="jpeg">JPEG (comprimido)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="dpi">Resolución (DPI)</Label>
+                                                <Select
+                                                    value={options.dpi.toString()}
+                                                    onValueChange={(value) => 
+                                                        setOptions({ ...options, dpi: parseInt(value) })
+                                                    }
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="72">72 DPI (Web)</SelectItem>
+                                                        <SelectItem value="150">150 DPI (Normal)</SelectItem>
+                                                        <SelectItem value="300">300 DPI (Alta)</SelectItem>
+                                                        <SelectItem value="600">600 DPI (Máxima)</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {options.format === 'jpeg' && (
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="quality">Calidad JPEG</Label>
+                                                    <Select
+                                                        value={options.quality.toString()}
+                                                        onValueChange={(value) => 
+                                                            setOptions({ ...options, quality: parseFloat(value) })
+                                                        }
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="0.6">60% (Básica)</SelectItem>
+                                                            <SelectItem value="0.8">80% (Buena)</SelectItem>
+                                                            <SelectItem value="0.9">90% (Alta)</SelectItem>
+                                                            <SelectItem value="1.0">100% (Máxima)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                        </div>
+                                </ToolCard>
 
                                 {/* Actions */}
-                                {pdfFile && (
-                                    <ToolCard title="Acciones">
-                                        <div className="flex flex-col sm:flex-row gap-4">
+                                <ToolCard title="Acciones" data-tour="actions">
+                                    <div className="space-y-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <Button
                                                 onClick={() => pdfFile && convertPDFToImages(pdfFile)}
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !pdfFile}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
-                                            >
+                                             >
                                                 {isProcessing ? (
                                                     <>
                                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -398,8 +437,16 @@ export default function PDFToImages() {
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                )}
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
+                                    </div>
+                                </ToolCard>
                             </div>
                         </div>
                     </div>

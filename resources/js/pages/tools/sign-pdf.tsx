@@ -143,12 +143,13 @@ export default function SignPDF() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {/* PDF Upload */}
-                            {!pdfFile && (
-                                <ToolCard title="1. Seleccionar PDF a Firmar">
+                            {/* Left Column: File Upload and Info */}
+                            <div className="space-y-6">
+                                {!pdfFile && (
+                                    <ToolCard title="Seleccionar PDF a Firmar">
                                     <FileUploadZone
                                         onFileSelect={handlePdfSelect}
                                         acceptedTypes=".pdf"
@@ -175,9 +176,7 @@ export default function SignPDF() {
                                 </ToolCard>
                             )}
 
-                            {/* File Info and Certificate */}
-                            {pdfFile && !isSigned && (
-                                <>
+                                {pdfFile && (
                                     <ToolCard title="Archivo PDF Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -193,9 +192,48 @@ export default function SignPDF() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Certificate Upload */}
-                                    <ToolCard title="2. Certificado Digital">
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
+
+                                {isSigned && (
+                                    <ToolCard title="¡PDF Firmado Exitosamente!">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡El PDF se firmó digitalmente y se descargó!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        El archivo ahora contiene tu firma digital verificable.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                onClick={resetTool}
+                                                variant="outline"
+                                                className="w-full"
+                                            >
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                Firmar Otro PDF
+                                            </Button>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Options and Actions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Certificado Digital">
                                         <div className="space-y-4">
                                             <div>
                                                 <Label htmlFor="certificate">Subir Certificado (.pfx, .p12, .pem) *</Label>
@@ -231,10 +269,9 @@ export default function SignPDF() {
                                                 />
                                             </div>
                                         </div>
-                                    </ToolCard>
+                                </ToolCard>
 
-                                    {/* Signature Details */}
-                                    <ToolCard title="3. Detalles de la Firma (Opcional)">
+                                <ToolCard title="Detalles de la Firma (Opcional)">
                                         <div className="space-y-4">
                                             <div>
                                                 <Label htmlFor="signer-name">Nombre del Firmante</Label>
@@ -260,10 +297,9 @@ export default function SignPDF() {
                                                 />
                                             </div>
                                         </div>
-                                    </ToolCard>
+                                </ToolCard>
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
+                                <ToolCard title="Acciones">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={signPDF}
@@ -292,37 +328,29 @@ export default function SignPDF() {
                                                 Seleccionar Otro
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
+                                </ToolCard>
 
-                            {/* Success Message */}
-                            {isSigned && (
-                                <ToolCard title="¡PDF Firmado Exitosamente!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡El PDF se firmó digitalmente y se descargó!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    El archivo ahora contiene tu firma digital verificable.
-                                                </p>
-                                            </div>
+                                <ToolCard title="Instrucciones">
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">1.</span>
+                                            <span>Selecciona el PDF que deseas firmar digitalmente</span>
                                         </div>
-
-                                        <Button
-                                            onClick={resetTool}
-                                            variant="outline"
-                                            className="w-full"
-                                        >
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            Firmar Otro PDF
-                                        </Button>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">2.</span>
+                                            <span>Sube tu certificado digital (.pfx, .p12 o .pem)</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">3.</span>
+                                            <span>Ingresa la contraseña del certificado</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">4.</span>
+                                            <span>Agrega detalles opcionales y firma el documento</span>
+                                        </div>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

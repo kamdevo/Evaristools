@@ -168,10 +168,12 @@ export default function RotatePDF() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
-                            {/* Upload Section */}
-                            {!pdfFile && (
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+                            {/* Left Column: File Upload and Info */}
+                            <div className="space-y-6">
+                                {!pdfFile && (
                                 <ToolCard title="Seleccionar PDF">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
@@ -198,9 +200,7 @@ export default function RotatePDF() {
                                 </ToolCard>
                             )}
 
-                            {/* File Info and Rotation Controls */}
-                            {pdfFile && !isRotated && (
-                                <>
+                                {pdfFile && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -216,9 +216,56 @@ export default function RotatePDF() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Rotation Controls */}
-                                    <ToolCard title="Controles de Rotación">
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
+
+                                {isRotated && rotatedPdfUrl && (
+                                    <ToolCard title="¡PDF Rotado Exitosamente!">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡Las rotaciones se aplicaron correctamente!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        Descarga tu PDF rotado o procesa otro archivo.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row gap-4">
+                                                <Button
+                                                    onClick={downloadRotatedPDF}
+                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    <Download className="mr-2 h-4 w-4" />
+                                                    Descargar PDF Rotado
+                                                </Button>
+                                                <Button
+                                                    onClick={resetTool}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    <Upload className="mr-2 h-4 w-4" />
+                                                    Rotar Otro PDF
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Controls and Actions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Controles de Rotación">
                                         <div className="space-y-4">
                                             {/* Rotate All Pages */}
                                             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
@@ -294,14 +341,13 @@ export default function RotatePDF() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </ToolCard>
+                                </ToolCard>
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
+                                <ToolCard title="Acciones">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={applyRotations}
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !pdfFile}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
                                             >
                                                 {isProcessing ? (
@@ -326,46 +372,29 @@ export default function RotatePDF() {
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
+                                </ToolCard>
 
-                            {/* Success Message */}
-                            {isRotated && rotatedPdfUrl && (
-                                <ToolCard title="¡PDF Rotado Exitosamente!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡Las rotaciones se aplicaron correctamente!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    Descarga tu PDF rotado o procesa otro archivo.
-                                                </p>
-                                            </div>
+                                <ToolCard title="Instrucciones">
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">1.</span>
+                                            <span>Selecciona el PDF que deseas rotar</span>
                                         </div>
-
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                onClick={downloadRotatedPDF}
-                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                                            >
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Descargar PDF Rotado
-                                            </Button>
-                                            <Button
-                                                onClick={resetTool}
-                                                variant="outline"
-                                                className="flex-1"
-                                            >
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Rotar Otro PDF
-                                            </Button>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">2.</span>
+                                            <span>Usa los controles para rotar todas o páginas individuales</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">3.</span>
+                                            <span>Aplica las rotaciones al documento</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">4.</span>
+                                            <span>Descarga el PDF con las rotaciones aplicadas</span>
                                         </div>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

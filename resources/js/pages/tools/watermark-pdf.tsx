@@ -191,10 +191,12 @@ export default function WatermarkPDF() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
-                            {/* Upload Section */}
-                            {!pdfFile && (
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+
+                            {/* Left Column: File Upload and Info */}
+                            <div className="space-y-6">
+                                {!pdfFile && (
                                 <ToolCard title="Seleccionar PDF">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
@@ -221,9 +223,7 @@ export default function WatermarkPDF() {
                                 </ToolCard>
                             )}
 
-                            {/* File Info and Options */}
-                            {pdfFile && !isWatermarked && (
-                                <>
+                                {pdfFile && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -239,9 +239,56 @@ export default function WatermarkPDF() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Watermark Options */}
-                                    <ToolCard title="Opciones de Marca de Agua">
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
+
+                                {isWatermarked && watermarkedPdfUrl && (
+                                    <ToolCard title="¡Marca de Agua Agregada!">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡La marca de agua se agregó correctamente!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        Descarga tu PDF marcado o procesa otro archivo.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row gap-4">
+                                                <Button
+                                                    onClick={downloadWatermarkedPDF}
+                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    <Download className="mr-2 h-4 w-4" />
+                                                    Descargar PDF con Marca de Agua
+                                                </Button>
+                                                <Button
+                                                    onClick={resetTool}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    <Upload className="mr-2 h-4 w-4" />
+                                                    Marcar Otro PDF
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Options and Actions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Opciones de Marca de Agua">
                                         <div className="space-y-4">
                                             {/* Text */}
                                             <div className="space-y-2">
@@ -351,14 +398,13 @@ export default function WatermarkPDF() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </ToolCard>
+                                </ToolCard>
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
+                                <ToolCard title="Acciones">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={addWatermark}
-                                                disabled={isProcessing || !options.text.trim()}
+                                                disabled={isProcessing || !pdfFile || !options.text.trim()}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
                                             >
                                                 {isProcessing ? (
@@ -383,46 +429,29 @@ export default function WatermarkPDF() {
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
+                                </ToolCard>
 
-                            {/* Success Message */}
-                            {isWatermarked && watermarkedPdfUrl && (
-                                <ToolCard title="¡Marca de Agua Agregada!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡La marca de agua se agregó correctamente!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    Descarga tu PDF marcado o procesa otro archivo.
-                                                </p>
-                                            </div>
+                                <ToolCard title="Instrucciones">
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">1.</span>
+                                            <span>Selecciona el PDF al que deseas agregar marca de agua</span>
                                         </div>
-
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                onClick={downloadWatermarkedPDF}
-                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                                            >
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Descargar PDF con Marca de Agua
-                                            </Button>
-                                            <Button
-                                                onClick={resetTool}
-                                                variant="outline"
-                                                className="flex-1"
-                                            >
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Marcar Otro PDF
-                                            </Button>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">2.</span>
+                                            <span>Configura el texto, posición, tamaño y color</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">3.</span>
+                                            <span>Visualiza la marca de agua en la vista previa</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">4.</span>
+                                            <span>Agrega la marca de agua y descarga el PDF</span>
                                         </div>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

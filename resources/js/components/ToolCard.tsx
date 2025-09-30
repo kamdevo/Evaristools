@@ -6,11 +6,12 @@ interface ToolCardProps {
     icon?: React.ComponentType<{ className?: string }>;
     children: React.ReactNode;
     className?: string;
+    [key: string]: any; // Allow any additional props like data-tour
 }
 
-export default function ToolCard({ title, description, icon: Icon, children, className = "" }: ToolCardProps) {
+export default function ToolCard({ title, description, icon: Icon, children, className = "", ...rest }: ToolCardProps) {
     return (
-        <Card className={className}>
+        <Card className={className} {...rest}>
             <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                     {Icon && <Icon className="h-5 w-5" />}

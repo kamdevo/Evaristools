@@ -113,11 +113,13 @@ export default function ProtectPDF() {
                 />
                 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {!pdfFile && (
-                                <ToolCard title="1. Seleccionar PDF">
+                            {/* Left Column: File Upload and Info */}
+                            <div className="space-y-6">
+                                {!pdfFile && (
+                                    <ToolCard title="Seleccionar PDF">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
                                         acceptedTypes=".pdf"
@@ -143,8 +145,7 @@ export default function ProtectPDF() {
                                 </ToolCard>
                             )}
 
-                            {pdfFile && !isProtected && (
-                                <>
+                                {pdfFile && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -158,8 +159,43 @@ export default function ProtectPDF() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    <ToolCard title="2. Contraseñas">
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
+
+                                {isProtected && (
+                                    <ToolCard title="¡PDF Protegido Exitosamente!">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡El PDF está protegido y descargado!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        Ahora el documento requiere contraseña para abrirse.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button onClick={resetTool} variant="outline" className="w-full">
+                                                <Upload className="mr-2 h-4 w-4" />
+                                                Proteger Otro PDF
+                                            </Button>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Options and Actions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Contraseñas">
                                         <div className="space-y-4">
                                             <div>
                                                 <Label htmlFor="user-password">Contraseña de Usuario *</Label>
@@ -201,9 +237,9 @@ export default function ProtectPDF() {
                                                 </div>
                                             </div>
                                         </div>
-                                    </ToolCard>
+                                </ToolCard>
 
-                                    <ToolCard title="Acciones">
+                                <ToolCard title="Acciones">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={protectPDF}
@@ -232,31 +268,29 @@ export default function ProtectPDF() {
                                                 Seleccionar Otro
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
+                                </ToolCard>
 
-                            {isProtected && (
-                                <ToolCard title="¡PDF Protegido Exitosamente!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡El PDF está protegido y descargado!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    Ahora el documento requiere contraseña para abrirse.
-                                                </p>
-                                            </div>
+                                <ToolCard title="Instrucciones">
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">1.</span>
+                                            <span>Selecciona el archivo PDF que deseas proteger</span>
                                         </div>
-                                        <Button onClick={resetTool} variant="outline" className="w-full">
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            Proteger Otro PDF
-                                        </Button>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">2.</span>
+                                            <span>Ingresa una contraseña de usuario (obligatoria)</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">3.</span>
+                                            <span>Opcionalmente, agrega una contraseña de propietario</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">4.</span>
+                                            <span>Haz clic en "Proteger PDF" y descarga tu archivo protegido</span>
+                                        </div>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>

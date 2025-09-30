@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Loader2, FileDown, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, Download, FileDown, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import ProgressBar from '@/components/ProgressBar';
 import axios from 'axios';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface Progress {
     current: number;
@@ -22,6 +24,37 @@ export default function WordToPDF() {
     const [dragOver, setDragOver] = useState(false);
     const [error, setError] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="left-column"]',
+                    popover: {
+                        title: 'Paso 1: Seleccionar Word',
+                        description: 'Arrastra tu documento Word (.doc o .docx) aquí o haz clic para seleccionarlo. Tamaño máximo: 25MB.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 2: Convertir a PDF',
+                        description: 'Una vez cargado tu documento, haz clic en "Convertir a PDF" para procesarlo. El archivo PDF se descargará automáticamente.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = (files: FileList) => {
         const file = files[0];
@@ -174,8 +207,8 @@ export default function WordToPDF() {
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {/* Left Column: File Upload and Info */}
-                            <div className="space-y-6">
+                            {/* Left Column: File Upload & Messages */}
+                            <div className="space-y-6" data-tour="left-column">
                                 <ToolCard
                                     title="Subir Documento Word"
                                     description="Selecciona un archivo Word (.docx o .doc) para convertir a PDF. Máximo 10MB."
@@ -268,8 +301,9 @@ export default function WordToPDF() {
 
                             {/* Right Column: Actions and Instructions */}
                             <div className="space-y-6">
-                                <ToolCard title="Acciones">
-                                            <div className="flex flex-col gap-4">
+                                <ToolCard title="Acciones" data-tour="actions">
+                                        <div className="space-y-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                                 <Button
                                                     onClick={convertToPDF}
                                                     disabled={isProcessing || !wordFile}
@@ -297,31 +331,17 @@ export default function WordToPDF() {
                                                     Seleccionar Otro
                                                 </Button>
                                             </div>
-                                </ToolCard>
-
-                                <ToolCard title="Instrucciones">
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">1.</span>
-                                            <span>Selecciona tu documento Word (.docx o .doc)</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">2.</span>
-                                            <span>Verifica que el archivo sea correcto</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">3.</span>
-                                            <span>Haz clic en "Convertir a PDF"</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">4.</span>
-                                            <span>Espera a que se complete la conversión y descarga automáticamente</span>
-                                        </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
                                     </div>
                                 </ToolCard>
                             </div>
-
-
                         </div>
                     </div>
                 </div>

@@ -159,11 +159,12 @@ export default function UnlockPDF() {
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="space-y-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {/* Upload Section */}
-                            {!pdfFile && (
+                            {/* Left Column: File Upload and Info */}
+                            <div className="space-y-6">
+                                {!pdfFile && (
                                 <ToolCard title="Seleccionar PDF">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
@@ -191,9 +192,7 @@ export default function UnlockPDF() {
                                 </ToolCard>
                             )}
 
-                            {/* File Info */}
-                            {pdfFile && !isUnlocked && (
-                                <>
+                                {pdfFile && (
                                     <ToolCard title="Archivo Seleccionado">
                                         <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                                             <div className="flex items-center space-x-3">
@@ -209,13 +208,61 @@ export default function UnlockPDF() {
                                             </div>
                                         </div>
                                     </ToolCard>
+                                )}
 
-                                    {/* Action Buttons */}
-                                    <ToolCard title="Acciones">
+                                {error && (
+                                    <ToolCard title="Error">
+                                        <div className="flex items-start space-x-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                            <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                                            <p className="text-red-800 dark:text-red-200">{error}</p>
+                                        </div>
+                                    </ToolCard>
+                                )}
+
+                                {isUnlocked && unlockedPdfUrl && (
+                                    <ToolCard title="¡PDF Desbloqueado Exitosamente!">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                                <CheckCircle className="h-8 w-8 text-green-600" />
+                                                <div>
+                                                    <p className="font-medium text-green-800 dark:text-green-200">
+                                                        ¡El PDF se desbloqueó correctamente!
+                                                    </p>
+                                                    <p className="text-sm text-green-600 dark:text-green-300">
+                                                        {warning}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row gap-4">
+                                                <Button
+                                                    onClick={downloadUnlockedPDF}
+                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    <Download className="mr-2 h-4 w-4" />
+                                                    Descargar PDF Desbloqueado
+                                                </Button>
+                                                <Button
+                                                    onClick={resetTool}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    <Upload className="mr-2 h-4 w-4" />
+                                                    Desbloquear Otro PDF
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </ToolCard>
+                                )}
+                            </div>
+
+                            {/* Right Column: Actions and Instructions */}
+                            <div className="space-y-6">
+                                <ToolCard title="Acciones">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={unlockPDF}
-                                                disabled={isProcessing}
+                                                disabled={isProcessing || !pdfFile}
                                                 className="flex-1 bg-institutional hover:bg-institutional/90"
                                             >
                                                 {isProcessing ? (
@@ -240,46 +287,29 @@ export default function UnlockPDF() {
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
-                                    </ToolCard>
-                                </>
-                            )}
+                                </ToolCard>
 
-                            {/* Success Message */}
-                            {isUnlocked && unlockedPdfUrl && (
-                                <ToolCard title="¡PDF Desbloqueado Exitosamente!">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-center space-x-3 p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                                            <CheckCircle className="h-8 w-8 text-green-600" />
-                                            <div>
-                                                <p className="font-medium text-green-800 dark:text-green-200">
-                                                    ¡El PDF se desbloqueó correctamente!
-                                                </p>
-                                                <p className="text-sm text-green-600 dark:text-green-300">
-                                                    {warning}
-                                                </p>
-                                            </div>
+                                <ToolCard title="Instrucciones">
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">1.</span>
+                                            <span>Selecciona el PDF que deseas desbloquear</span>
                                         </div>
-
-                                        <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                onClick={downloadUnlockedPDF}
-                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                                            >
-                                                <Download className="mr-2 h-4 w-4" />
-                                                Descargar PDF Desbloqueado
-                                            </Button>
-                                            <Button
-                                                onClick={resetTool}
-                                                variant="outline"
-                                                className="flex-1"
-                                            >
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Desbloquear Otro PDF
-                                            </Button>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">2.</span>
+                                            <span>Haz clic en "Desbloquear PDF"</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">3.</span>
+                                            <span>Descarga el PDF sin restricciones</span>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <span className="font-medium text-institutional">4.</span>
+                                            <span>Usa responsablemente respetando derechos de autor</span>
                                         </div>
                                     </div>
                                 </ToolCard>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
