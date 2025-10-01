@@ -251,7 +251,7 @@ export default function Evaristools({ shared }: { shared: SharedData }) {
     // Obtener herramientas populares desde el backend
     const fetchPopularTools = async () => {
         try {
-            const response = await axios.get('/api/tools/popular?threshold=5');
+            const response = await axios.get('/tools/popular?threshold=5');
             if (response.data.success) {
                 setPopularToolIds(response.data.popular_tools);
             }
@@ -266,7 +266,7 @@ export default function Evaristools({ shared }: { shared: SharedData }) {
     const handleToolClick = async (toolId: string) => {
         try {
             // Registrar el clic en el backend (fire and forget)
-            axios.post('/api/tools/click', { tool_id: toolId }).catch(() => {
+            axios.post('/tools/click', { tool_id: toolId }).catch(() => {
                 // Ignorar errores silenciosamente para no interrumpir la navegación
             });
         } catch (error) {
