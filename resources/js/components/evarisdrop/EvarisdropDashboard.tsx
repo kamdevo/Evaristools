@@ -415,10 +415,11 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
           {/* Left Column - Devices & File Transfer */}
           <div className="space-y-6">
             {/* Devices & File Transfer */}
-            <ToolCard
-              title={`Dispositivos Disponibles (${devices.length})`}
-              description="Dispositivos conectados en tu sala"
-            >
+            <div data-tour="devices">
+              <ToolCard
+                title={`Dispositivos Disponibles (${devices.length})`}
+                description="Dispositivos conectados en tu sala"
+              >
               {devices.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <WifiHigh className="w-16 h-16 mx-auto mb-4 opacity-30" />
@@ -443,51 +444,58 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
                   ))}
                 </div>
               )}
-            </ToolCard>
+              </ToolCard>
+            </div>
 
             {/* File Transfer Zone */}
-            <ToolCard
-              title="Zona de Transferencia"
-              description="Arrastra archivos aquí para compartir"
-            >
-              {currentUser.isInRoom && devices.length > 0 ? (
-                <FileDropZone 
-                  onFileSelect={handleFileSelect}
-                  maxFileSize={maxFileSize}
-                />
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Upload className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="font-medium text-slate-900 dark:text-white mb-2">Zona de Transferencia</p>
-                  <p className="text-sm mb-3">Para transferir archivos necesitas:</p>
-                  <div className="text-sm space-y-1">
-                    <p>✓ Estar en una sala activa</p>
-                    <p>✓ Tener dispositivos conectados</p>
+            <div data-tour="transfer-zone">
+              <ToolCard
+                title="Zona de Transferencia"
+                description="Arrastra archivos aquí para compartir"
+              >
+                {currentUser.isInRoom && devices.length > 0 ? (
+                  <FileDropZone 
+                    onFileSelect={handleFileSelect}
+                    maxFileSize={maxFileSize}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Upload className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                    <p className="font-medium text-slate-900 dark:text-white mb-2">Zona de Transferencia</p>
+                    <p className="text-sm mb-3">Para transferir archivos necesitas:</p>
+                    <div className="text-sm space-y-1">
+                      <p>✓ Estar en una sala activa</p>
+                      <p>✓ Tener dispositivos conectados</p>
+                    </div>
                   </div>
-                </div>
-              )}
-            </ToolCard>
+                )}
+              </ToolCard>
+            </div>
           </div>
 
           {/* Right Column - User Profile & Transfers */}
           <div className="space-y-6">
             {/* User Profile */}
-            <UserProfileSection
-              username={currentUser.username}
-              roomCode={currentUser.roomCode}
-              onUsernameChange={handleUsernameChange}
-              onGenerateNewUsername={handleGenerateNewUsername}
-              onJoinRoom={handleJoinRoom}
-            />
+            <div data-tour="user-profile">
+              <UserProfileSection
+                username={currentUser.username}
+                roomCode={currentUser.roomCode}
+                onUsernameChange={handleUsernameChange}
+                onGenerateNewUsername={handleGenerateNewUsername}
+                onJoinRoom={handleJoinRoom}
+              />
+            </div>
 
             {/* File Queue */}
             {queuedFiles.length > 0 && (
-              <FileQueueCard
-                queuedFiles={queuedFiles}
-                devices={devices.filter(d => d.status === ConnectionStatus.CONNECTED)}
-                onSendFile={handleSendFile}
-                onRemoveFile={handleRemoveQueuedFile}
-              />
+              <div data-tour="file-queue">
+                <FileQueueCard
+                  queuedFiles={queuedFiles}
+                  devices={devices.filter(d => d.status === ConnectionStatus.CONNECTED)}
+                  onSendFile={handleSendFile}
+                  onRemoveFile={handleRemoveQueuedFile}
+                />
+              </div>
             )}
 
             {/* Active Transfers */}

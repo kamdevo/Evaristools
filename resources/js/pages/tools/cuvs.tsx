@@ -878,7 +878,6 @@ export default function CUVS() {
                                 <ToolCard
                                     title="Seleccionar Archivos"
                                     description="Elige entre carpeta completa o archivos individuales"
-                                    icon={Upload}
                                 >
                                     <Tabs value={selectionMode} onValueChange={(value) => setSelectionMode(value as 'folder' | 'files')}>
                                         <TabsList className="grid w-full grid-cols-2">
@@ -959,7 +958,6 @@ export default function CUVS() {
                                 <ToolCard
                                     title="Operaciones Disponibles"
                                     description="Selecciona la operación que deseas realizar"
-                                    icon={Activity}
                                 >
                                     <div className="space-y-3">
                                         <Button
