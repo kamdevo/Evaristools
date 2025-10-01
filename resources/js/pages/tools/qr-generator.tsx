@@ -442,11 +442,12 @@ export default function QRGenerator() {
                                     <div className="flex flex-col items-center space-y-6">
                                         {qrCodeUrl ? (
                                             <>
-                                                <div className="rounded-lg border-2 border-dashed border-gray-300 p-4 bg-white">
+                                                <div className="rounded-lg border-2 border-dashed border-gray-300 p-4 bg-white overflow-auto max-w-full">
                                                     <img
                                                         src={qrCodeUrl}
                                                         alt="Código QR generado"
-                                                        className="max-w-full h-auto"
+                                                        className="h-auto"
+                                                        style={{ width: `${qrData.size}px` }}
                                                     />
                                                 </div>
                                                 <div className="flex space-x-3">
@@ -465,9 +466,6 @@ export default function QRGenerator() {
                                                     >
                                                         <Copy className="mr-2 h-4 w-4" />
                                                         {copied ? 'Copiado!' : 'Copiar'}
-                                                    </Button>
-                                                    <Button variant="outline">
-                                                        <Share2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
                                             </>
