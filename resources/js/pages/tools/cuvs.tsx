@@ -1,11 +1,15 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Head } from '@inertiajs/react';
-import { FileText, Shield, Building2, Upload, FolderOpen, FileSpreadsheet, HelpCircle } from 'lucide-react';
+import { FileText, Shield, Building2, Upload, FolderOpen, FileSpreadsheet, Activity, HelpCircle } from 'lucide-react';
 import { useState, useRef } from 'react';
 import Swal from 'sweetalert2';
-import { downloadWithProgress, downloadSecurely, createTypedBlob } from '@/utils/secureDownload';
+import type { SweetAlertOptions } from 'sweetalert2';
+import { downloadSecurely, createTypedBlob } from '@/utils/secureDownload';
 import ToolPageHeader from '@/components/ToolPageHeader';
+import ToolCard from '@/components/ToolCard';
+import FileUploadZone from '@/components/FileUploadZone';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
@@ -52,11 +56,20 @@ const validateFileList = (files: FileList | null): File[] => {
     return Array.from(files);
 };
 
+// Función auxiliar para leer archivos
+const leerArchivo = (archivo: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsText(archivo);
+    });
+};
+
 export default function CUVS() {
     const [selectedFolder, setSelectedFolder] = useState<FileList | null>(null);
     const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
     const [selectionMode, setSelectionMode] = useState<'folder' | 'files'>('folder');
-    const [isDragOver, setIsDragOver] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingType, setProcessingType] = useState<string | null>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
@@ -73,27 +86,18 @@ export default function CUVS() {
                 {
                     element: '[data-tour="upload"]',
                     popover: {
-                        title: 'Paso 1: Subir Archivos',
-                        description: 'Arrastra una carpeta completa o selecciona archivos individuales para procesar. El sistema mantendrá la estructura de carpetas.',
+                        title: 'Paso 1: Seleccionar Archivos',
+                        description: 'Elige entre seleccionar una carpeta completa o archivos individuales. La herramienta procesará los archivos según la operación seleccionada.',
                         side: 'right',
                         align: 'start'
                     }
                 },
                 {
-                    element: '[data-tour="tools"]',
+                    element: '[data-tour="operations"]',
                     popover: {
-                        title: 'Paso 2: Seleccionar Herramienta',
-                        description: 'Elige la herramienta que necesitas: procesamiento para diferentes EPS (S.O.S, Coosalud, otras), compresión de PDFs o conversión a Excel.',
+                        title: 'Paso 2: Operaciones Disponibles',
+                        description: 'Selecciona la operación que deseas realizar: comprimir PDFs, procesar para Coosalud, otras EPS, validar S.O.S o convertir a Excel.',
                         side: 'left',
-                        align: 'start'
-                    }
-                },
-                {
-                    element: '[data-tour="mode"]',
-                    popover: {
-                        title: 'Paso 3: Modo de Selección',
-                        description: 'Cambia entre modo carpeta (mantiene estructura) o modo archivos (selección individual).',
-                        side: 'bottom',
                         align: 'start'
                     }
                 }
@@ -102,15 +106,10 @@ export default function CUVS() {
         driverObj.drive();
     };
 
-    // Configuración personalizada de SweetAlert2 con colores institucionales
-    const getSwalConfig = (type: 'success' | 'error' | 'warning' | 'info') => {
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        
-        const baseConfig = {
-            background: isDarkMode ? '#0a0a0a' : '#ffffff',
-            color: isDarkMode ? '#ededec' : '#1b1b18',
-            confirmButtonColor: '#0056b3',
-            cancelButtonColor: isDarkMode ? '#3e3e3a' : '#f5f5f5',
+    // Configuración de SweetAlert2 usando variables de tema
+    const getSwalConfig = (type: 'success' | 'error' | 'warning' | 'info'): SweetAlertOptions => {
+        return {
+            confirmButtonColor: 'var(--institutional-blue)',
             customClass: {
                 popup: 'rounded-lg border shadow-lg',
                 title: 'text-lg font-semibold',
@@ -119,69 +118,147 @@ export default function CUVS() {
                 cancelButton: 'rounded-md px-4 py-2 font-medium transition-colors hover:opacity-90'
             }
         };
-
-        return baseConfig;
     };
 
     const getSelectedFiles = (): FileList | null => {
         return selectionMode === 'folder' ? selectedFolder : selectedFiles;
     };
 
-    // Función auxiliar para organizar archivos por carpetas
+    // Función auxiliar para organizar archivos por carpetas (compatible con ambos modos)
     const organizeFilesByFolder = (files: FileList, filterExtensions?: string[]): { [key: string]: File[] } => {
-        const filesByFolder: { [key: string]: File[] } = {};
+        const carpetas: { [key: string]: File[] } = {};
         
         Array.from(files).forEach(file => {
-            const path = (file as any).webkitRelativePath || file.name;
+            // Filtrar por extensiones si se especifica
+            if (filterExtensions && !filterExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) {
+                return;
+            }
             
-            if (filterExtensions) {
-                const extension = path.toLowerCase().split('.').pop() || '';
-                if (!filterExtensions.includes(extension)) {
-                    return;
+            if (selectionMode === 'folder' && file.webkitRelativePath) {
+                // Modo carpeta: usar estructura existente
+                const pathParts = file.webkitRelativePath.split('/');
+                if (pathParts.length >= 2) {
+                    const carpetaPrincipal = pathParts[1]; // nombre de la carpeta
+                    if (!carpetas[carpetaPrincipal]) {
+                        carpetas[carpetaPrincipal] = [];
+                    }
+                    carpetas[carpetaPrincipal].push(file);
                 }
+            } else {
+                // Modo archivos individuales: crear carpeta virtual
+                const carpetaVirtual = 'archivos_seleccionados';
+                if (!carpetas[carpetaVirtual]) {
+                    carpetas[carpetaVirtual] = [];
+                }
+                carpetas[carpetaVirtual].push(file);
             }
-            
-            const parts = path.split('/');
-            const folderPath = parts.length > 1 ? parts.slice(0, -1).join('/') : 'root';
-            
-            if (!filesByFolder[folderPath]) {
-                filesByFolder[folderPath] = [];
-            }
-            filesByFolder[folderPath].push(file);
         });
         
-        return filesByFolder;
+        return carpetas;
     };
 
     const handleComprimirPDF = async () => {
         const files = getSelectedFiles();
         if (!files || files.length === 0) {
-            await Swal.fire({
-                ...getSwalConfig('warning'),
+            const message = selectionMode === 'folder'
+                ? 'Por favor selecciona una carpeta con subcarpetas que contengan archivos PDF'
+                : 'Por favor selecciona archivos PDF para comprimir';
+            Swal.fire({
                 icon: 'warning',
-                title: 'Sin archivos',
-                text: 'Por favor selecciona archivos PDF para comprimir'
+                title: 'Archivos requeridos',
+                text: message,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('warning')
             });
             return;
         }
 
         setIsProcessing(true);
-        setProcessingType('comprimir');
+        setProcessingType('comprimir-pdf');
 
         try {
-            await Swal.fire({
-                ...getSwalConfig('info'),
-                icon: 'info',
-                title: 'Función en desarrollo',
-                text: 'La compresión de PDFs estará disponible próximamente'
-            });
+            // Importar JSZip dinámicamente
+            const JSZip = (await import('jszip')).default;
+            
+            console.log(`Procesando ${files.length} archivos para compresión PDF...`);
+            
+            // Organizar archivos por subcarpeta
+            const subcarpetas = organizeFilesByFolder(files, ['.pdf']);
+            
+            console.log(`Subcarpetas detectadas: ${Object.keys(subcarpetas).length}`);
+            
+            // Crear ZIP final que contendrá toda la estructura
+            const zipFinal = new JSZip();
+            let carpetasComprimidas = 0;
+            
+            // Para cada subcarpeta, crear un ZIP con sus PDFs (como Python)
+            for (const [nombreSubcarpeta, archivos] of Object.entries(subcarpetas)) {
+                // Filtrar solo archivos PDF
+                const archivosPDF = archivos.filter(archivo => 
+                    archivo.name.toLowerCase().endsWith('.pdf')
+                );
+                
+                if (archivosPDF.length > 0) {
+                    // Crear ZIP individual para esta subcarpeta
+                    const zipSubcarpeta = new JSZip();
+                    
+                    // Agregar cada PDF al ZIP de la subcarpeta
+                    for (const archivoPDF of archivosPDF) {
+                        // Solo usar el nombre del archivo (como arcname=archivo en Python)
+                        zipSubcarpeta.file(archivoPDF.name, archivoPDF);
+                    }
+                    
+                    // Generar el ZIP de la subcarpeta
+                    const zipBlob = await zipSubcarpeta.generateAsync({
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 9 }
+                    });
+                    
+                    // Agregar el ZIP dentro de la subcarpeta (subcarpeta/subcarpeta.zip)
+                    zipFinal.file(`${nombreSubcarpeta}/${nombreSubcarpeta}.zip`, zipBlob);
+                    carpetasComprimidas++;
+                    
+                    console.log(`📁 Comprimido: ${nombreSubcarpeta}/${nombreSubcarpeta}.zip`);
+                }
+            }
+            
+            if (carpetasComprimidas > 0) {
+                // Generar y descargar el ZIP final
+                const zipBlob = await zipFinal.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+                const typedBlob = createTypedBlob(zipBlob, 'zip');
+                downloadSecurely(typedBlob, 'pdfs_comprimidos.zip');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: MESSAGES.success.comprimir,
+                    text: `${carpetasComprimidas} carpetas comprimidas correctamente`,
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('success')
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: MESSAGES.info.noFiles,
+                    text: 'No se encontraron subcarpetas con archivos PDF para comprimir',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('info')
+                });
+            }
+
         } catch (error) {
-            console.error('Error:', error);
-            await Swal.fire({
-                ...getSwalConfig('error'),
+            console.error('Error en compresión PDF:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: MESSAGES.error.processing
+                title: MESSAGES.error.processing,
+                text: errorMessage,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('error')
             });
         } finally {
             setIsProcessing(false);
@@ -192,32 +269,195 @@ export default function CUVS() {
     const handleValidarOtrasEPS = async () => {
         const files = getSelectedFiles();
         if (!files || files.length === 0) {
-            await Swal.fire({
-                ...getSwalConfig('warning'),
+            const message = selectionMode === 'folder'
+                ? 'Por favor selecciona una carpeta con archivos JSON y XML'
+                : 'Por favor selecciona archivos JSON y XML para procesar';
+            Swal.fire({
                 icon: 'warning',
-                title: 'Sin archivos',
-                text: 'Por favor selecciona archivos JSON para procesar'
+                title: 'Archivos requeridos',
+                text: message,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('warning')
             });
             return;
         }
 
         setIsProcessing(true);
-        setProcessingType('otrasEps');
+        setProcessingType('otras-eps');
 
         try {
-            await Swal.fire({
-                ...getSwalConfig('info'),
-                icon: 'info',
-                title: 'Función en desarrollo',
-                text: 'El procesamiento para otras EPS estará disponible próximamente'
-            });
+            // Importar JSZip dinámicamente
+            const JSZip = (await import('jszip')).default;
+            
+            console.log(`Procesando ${files.length} archivos para otras EPS...`);
+            
+            // Reglas de renombrado exactas del script Python
+            const renameRules: { [key: string]: string } = {
+                "70-": "FE",
+                "71-": "FER", 
+                "77-": "FCTG"
+            };
+            
+            // Función para renombrar elementos (exacta del script Python)
+            const renameElement = (name: string): string => {
+                let newName = name;
+                let modified = false;
+                
+                // Aplicar reglas de prefijos
+                for (const [prefix, newPrefix] of Object.entries(renameRules)) {
+                    if (name.startsWith(prefix)) {
+                        newName = name.replace(prefix, newPrefix); // Solo primera ocurrencia
+                        modified = true;
+                        break;
+                    }
+                }
+                
+                // Eliminar -001
+                const withoutSuffix = newName.replace("-001", "");
+                if (withoutSuffix !== newName) {
+                    modified = true;
+                }
+                
+                return withoutSuffix;
+            };
+            
+            // Organizar archivos por carpeta
+            const carpetas = organizeFilesByFolder(files, ['.json', '.xml']);
+            
+            console.log(`Carpetas detectadas: ${Object.keys(carpetas).length}`);
+            
+            // Crear ZIP final
+            const zip = new JSZip();
+            let carpetasCopiadas = 0;
+            let archivosRenombrados = 0;
+            let cuvModificados = 0;
+            
+            // Procesar todas las carpetas (mantener nombres originales de carpetas)
+            for (const [nombreCarpeta, archivos] of Object.entries(carpetas)) {
+                // Las carpetas mantienen su nombre original (70-1372772-001)
+                const nuevoNombreCarpeta = nombreCarpeta;
+                
+                // Procesar todas las carpetas detectadas
+                carpetasCopiadas++;
+                console.log(`✅ Carpeta procesada: ${nombreCarpeta}`);
+                
+                // Procesar archivos dentro de la carpeta
+                for (const archivo of archivos) {
+                    try {
+                        let nuevoNombreArchivo = archivo.name;
+                        
+                        // Aplicar reglas de renombrado a archivos
+                        for (const [prefix, newPrefix] of Object.entries(renameRules)) {
+                            if (archivo.name.startsWith(prefix)) {
+                                nuevoNombreArchivo = archivo.name.replace(prefix, newPrefix);
+                                break;
+                            }
+                        }
+                        
+                        // Eliminar -001 de archivos
+                        nuevoNombreArchivo = nuevoNombreArchivo.replace("-001", "");
+                        
+                        // Renombrar archivos ResultadosMSPS_ usando nombre ORIGINAL de carpeta
+                        if (archivo.name.startsWith("ResultadosMSPS_")) {
+                            const extension = archivo.name.substring(archivo.name.lastIndexOf('.'));
+                            nuevoNombreArchivo = `${nombreCarpeta}CUV${extension}`;
+                        }
+                        
+                        // Contar archivos renombrados
+                        if (nuevoNombreArchivo !== archivo.name) {
+                            archivosRenombrados++;
+                            console.log(`✅ Archivo renombrado: ${archivo.name} ➝ ${nuevoNombreArchivo}`);
+                        }
+                        
+                        // Crear ruta manteniendo nombre original de carpeta
+                        const rutaRelativa = archivo.webkitRelativePath;
+                        const nuevaRuta = rutaRelativa.replace(archivo.name, nuevoNombreArchivo);
+                        
+                        // Procesar archivos CUV.json (como process_json_files)
+                        if (nuevoNombreArchivo.toLowerCase().endsWith('cuv.json')) {
+                            try {
+                                const contenidoTexto = await leerArchivo(archivo);
+                                const data = JSON.parse(contenidoTexto);
+                                
+                                // Usar nombre del archivo sin extensión
+                                const nombreArchivoSinExt = nuevoNombreArchivo.replace('.json', '');
+                                data.RutaArchivos = `C:\\Users\\${nombreArchivoSinExt}`;
+                                
+                                // DIFERENCIA CLAVE con Coosalud: Array vacío, no objeto complejo
+                                if (!("ResultadosValidacion" in data)) {
+                                    data.ResultadosValidacion = []; // Array vacío como Python
+                                }
+                                if (!("tipoNota" in data)) {
+                                    data.tipoNota = null;
+                                }
+                                if (!("numNota" in data)) {
+                                    data.numNota = null;
+                                }
+                                
+                                const contenidoProcesado = JSON.stringify(data, null, 2);
+                                zip.file(nuevaRuta, contenidoProcesado);
+                                cuvModificados++;
+                                
+                                console.log(`✅ Archivo CUV actualizado correctamente: ${nuevoNombreArchivo}`);
+                                
+                            } catch (jsonError) {
+                                console.warn(`❌ Error al procesar ${archivo.name}:`, jsonError);
+                                zip.file(nuevaRuta, archivo);
+                            }
+                        } else {
+                            // Agregar archivo normal al ZIP
+                            zip.file(nuevaRuta, archivo);
+                        }
+                        
+                    } catch (error) {
+                        console.error(`❌ Error al procesar ${archivo.name}:`, error);
+                    }
+                }
+            }
+            
+            if (carpetasCopiadas > 0) {
+                // Generar y descargar ZIP
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+                const typedBlob = createTypedBlob(zipBlob, 'zip');
+                downloadSecurely(typedBlob, 'json_otras_eps_procesados.zip');
+                
+                // Mostrar resumen como el script Python
+                console.log("🔹 Proceso de copiado y renombrado finalizado.");
+                console.log("\n📊 Resumen del proceso:");
+                console.log(`✔️ Carpetas copiadas y renombradas: ${carpetasCopiadas}`);
+                console.log(`✔️ Archivos renombrados: ${archivosRenombrados}`);
+                console.log(`✔️ Número total de CUV modificados correctamente: ${cuvModificados}`);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: MESSAGES.success.otrasEps,
+                    text: 'Descarga iniciada automáticamente',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('success')
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: MESSAGES.info.noFiles,
+                    text: 'No se encontraron carpetas que requieran procesamiento para otras EPS',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('info')
+                });
+            }
+
         } catch (error) {
-            console.error('Error:', error);
-            await Swal.fire({
-                ...getSwalConfig('error'),
+            console.error('Error en procesamiento otras EPS:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: MESSAGES.error.processing
+                title: MESSAGES.error.processing,
+                text: errorMessage,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('error')
             });
         } finally {
             setIsProcessing(false);
@@ -228,11 +468,15 @@ export default function CUVS() {
     const handleConvertToCoosalud = async () => {
         const files = getSelectedFiles();
         if (!files || files.length === 0) {
-            await Swal.fire({
-                ...getSwalConfig('warning'),
+            const message = selectionMode === 'folder'
+                ? 'Por favor selecciona una carpeta con archivos JSON y XML'
+                : 'Por favor selecciona archivos JSON y XML para procesar';
+            Swal.fire({
                 icon: 'warning',
-                title: 'Sin archivos',
-                text: 'Por favor selecciona archivos JSON para convertir'
+                title: 'Archivos requeridos',
+                text: message,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('warning')
             });
             return;
         }
@@ -241,399 +485,540 @@ export default function CUVS() {
         setProcessingType('coosalud');
 
         try {
-            await Swal.fire({
-                ...getSwalConfig('info'),
-                icon: 'info',
-                title: 'Función en desarrollo',
-                text: 'La conversión para Coosalud estará disponible próximamente'
-            });
-        } catch (error) {
-            console.error('Error:', error);
-            await Swal.fire({
-                ...getSwalConfig('error'),
-                icon: 'error',
-                title: 'Error',
-                text: MESSAGES.error.processing
-            });
-        } finally {
-            setIsProcessing(false);
-            setProcessingType(null);
-        }
-    };
-
-    const handleProcessJsonSOS = async () => {
-        const files = getSelectedFiles();
-        if (!files || files.length === 0) {
-            await Swal.fire({
-                ...getSwalConfig('warning'),
-                icon: 'warning',
-                title: 'Sin archivos',
-                text: 'Por favor selecciona archivos para procesar'
-            });
-            return;
-        }
-
-        setIsProcessing(true);
-        setProcessingType('sos');
-
-        try {
-            const formData = new FormData();
-            const filePaths: { [key: string]: string } = {};
-
-            Array.from(files).forEach((file, index) => {
-                formData.append('files[]', file);
-                const path = (file as any).webkitRelativePath || file.name;
-                filePaths[`file_${index}`] = path;
-            });
-
-            formData.append('file_paths', JSON.stringify(filePaths));
-
-            const response = await fetch('/tools/cuvs/process-json-sos', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || ''
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Error en el servidor');
-            }
-
-            const result = await response.json();
-
-            if (result.success) {
-                await Swal.fire({
-                    ...getSwalConfig('success'),
-                    icon: 'success',
-                    title: MESSAGES.success.sos,
-                    html: `
-                        <div class="text-left">
-                            <p><strong>Carpetas copiadas:</strong> ${result.copied_folders}</p>
-                            <p><strong>Archivos renombrados:</strong> ${result.renamed_files}</p>
-                            <p><strong>Archivos CUV procesados:</strong> ${result.processed_cuv_files}</p>
-                        </div>
-                    `
-                });
-
-                if (result.download_url) {
-                    window.location.href = result.download_url;
-                }
-            } else {
-                throw new Error(result.error || 'Error desconocido');
-            }
-        } catch (error: any) {
-            console.error('Error:', error);
-            await Swal.fire({
-                ...getSwalConfig('error'),
-                icon: 'error',
-                title: 'Error',
-                text: error.message || MESSAGES.error.processing
-            });
-        } finally {
-            setIsProcessing(false);
-            setProcessingType(null);
-        }
-    };
-
-    const handleGenerarExcel = async () => {
-        const files = getSelectedFiles();
-        if (!files || files.length === 0) {
-            await Swal.fire({
-                ...getSwalConfig('warning'),
-                icon: 'warning',
-                title: 'Sin archivos',
-                text: 'Por favor selecciona archivos JSON para convertir'
-            });
-            return;
-        }
-
-        setIsProcessing(true);
-        setProcessingType('excel');
-
-        try {
-            await Swal.fire({
-                ...getSwalConfig('info'),
-                icon: 'info',
-                title: 'Función en desarrollo',
-                text: 'La conversión a Excel estará disponible próximamente'
-            });
-        } catch (error) {
-            console.error('Error:', error);
-            await Swal.fire({
-                ...getSwalConfig('error'),
-                icon: 'error',
-                title: 'Error',
-                text: MESSAGES.error.processing
-            });
-        } finally {
-            setIsProcessing(false);
-            setProcessingType(null);
-        }
-    };
-
-    const handleFileSelect = () => {
-        if (selectionMode === 'folder') {
-            folderInputRef.current?.click();
-        } else {
-            fileInputRef.current?.click();
-        }
-    };
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (files && files.length > 0) {
-            if (selectionMode === 'folder') {
-                setSelectedFolder(files);
-            } else {
-                setSelectedFiles(files);
-            }
-        }
-    };
-
-    const handleDragOver = (event: React.DragEvent) => {
-        event.preventDefault();
-        setIsDragOver(true);
-    };
-
-    const handleDragLeave = (event: React.DragEvent) => {
-        event.preventDefault();
-        setIsDragOver(false);
-    };
-
-    const handleDrop = (event: React.DragEvent) => {
-        event.preventDefault();
-        setIsDragOver(false);
-
-        const items = event.dataTransfer.items;
-        if (items) {
-            const files: File[] = [];
+            // Importar JSZip dinámicamente
+            const JSZip = (await import('jszip')).default;
             
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                if (item.kind === 'file') {
-                    const file = item.getAsFile();
-                    if (file) {
-                        files.push(file);
+            console.log(`Procesando ${files.length} archivos para Coosalud...`);
+            
+            // Reglas de renombrado exactas del script Python
+            const renameRules: { [key: string]: string } = {
+                "70-": "FE",
+                "71-": "FER", 
+                "77-": "FCTG"
+            };
+            
+            // Función para renombrar elementos (exacta del script Python)
+            const renameElement = (name: string): string => {
+                let newName = name;
+                // Aplicar reglas de prefijos
+                for (const [prefix, newPrefix] of Object.entries(renameRules)) {
+                    if (name.startsWith(prefix)) {
+                        newName = name.replace(prefix, newPrefix); // Solo reemplazar primera ocurrencia
+                        break;
+                    }
+                }
+                // Eliminar "-001"
+                return newName.replace("-001", "");
+            };
+            
+            // Organizar archivos por carpeta
+            const carpetas = organizeFilesByFolder(files, ['.json', '.xml']);
+            
+            console.log(`Carpetas detectadas: ${Object.keys(carpetas).length}`);
+            
+            // Crear ZIP final
+            const zip = new JSZip();
+            let carpetasCopiadas = 0;
+            let archivosRenombrados = 0;
+            let cuvModificados = 0;
+            
+            // Procesar todas las carpetas (mantener nombres originales de carpetas)
+            for (const [nombreCarpeta, archivos] of Object.entries(carpetas)) {
+                carpetasCopiadas++;
+                console.log(`✅ Carpeta procesada: ${nombreCarpeta}`);
+                
+                // Procesar archivos dentro de la carpeta
+                for (const archivo of archivos) {
+                    try {
+                        let nuevoNombreArchivo = renameElement(archivo.name);
+                        
+                        // Renombrar archivos ResultadosMSPS_ usando el nombre ORIGINAL de la carpeta
+                        if (archivo.name.startsWith("ResultadosMSPS_")) {
+                            const extension = archivo.name.substring(archivo.name.lastIndexOf('.'));
+                            nuevoNombreArchivo = `${nombreCarpeta}CUV${extension}`;
+                        }
+                        
+                        // Contar archivos renombrados
+                        if (nuevoNombreArchivo !== archivo.name) {
+                            archivosRenombrados++;
+                            console.log(`✅ Archivo renombrado: ${archivo.name} ➝ ${nuevoNombreArchivo}`);
+                        }
+                        
+                        // Crear ruta manteniendo nombre original de carpeta
+                        const rutaRelativa = archivo.webkitRelativePath || `${nombreCarpeta}/${archivo.name}`;
+                        const nuevaRuta = rutaRelativa.replace(archivo.name, nuevoNombreArchivo);
+                        
+                        // Procesar archivos CUV.json
+                        if (nuevoNombreArchivo.toLowerCase().endsWith('cuv.json')) {
+                            try {
+                                const contenidoTexto = await leerArchivo(archivo);
+                                const data = JSON.parse(contenidoTexto);
+                                
+                                // Usar nombre del archivo sin extensión
+                                const nombreArchivoSinExt = nuevoNombreArchivo.replace('.json', '');
+                                data.RutaArchivos = `C:\\Users\\${nombreArchivoSinExt}`;
+                                
+                                // SETDEFAULT exacto del script Python
+                                if (!data.hasOwnProperty('ResultadosValidacion')) {
+                                    data.ResultadosValidacion = [{
+                                        "Clase": "NOTIFICACION",
+                                        "Codigo": "FED129",
+                                        "Descripcion": "[Interoperabilidad.Group.Collection.AdditionalInformation.NUMERO_CONTRATO.Value] El apartado no existe o no tiene valor en el XML del documento electrónico. Por favor verifique que la etiqueta Xml use mayúsculas y minúsculas según resolución",
+                                        "Observaciones": "",
+                                        "PathFuente": "",
+                                        "Fuente": "FacturaElectronica"
+                                    }];
+                                }
+                                
+                                if (!data.hasOwnProperty('tipoNota')) {
+                                    data.tipoNota = null;
+                                }
+                                
+                                if (!data.hasOwnProperty('numNota')) {
+                                    data.numNota = null;
+                                }
+                                
+                                const contenidoProcesado = JSON.stringify(data, null, 2);
+                                zip.file(nuevaRuta, contenidoProcesado);
+                                cuvModificados++;
+                                
+                                console.log(`✅ Archivo CUV actualizado correctamente: ${nuevoNombreArchivo}`);
+                                
+                            } catch (jsonError) {
+                                console.warn(`❌ Error al procesar ${archivo.name}:`, jsonError);
+                                zip.file(nuevaRuta, archivo);
+                            }
+                        } else {
+                            // Agregar archivo normal al ZIP
+                            zip.file(nuevaRuta, archivo);
+                        }
+                        
+                    } catch (error) {
+                        console.error(`❌ Error al procesar ${archivo.name}:`, error);
                     }
                 }
             }
-
-            if (files.length > 0) {
-                const fileList = new DataTransfer();
-                files.forEach(file => fileList.items.add(file));
+            
+            if (carpetasCopiadas > 0) {
+                // Generar y descargar ZIP
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+                const typedBlob = createTypedBlob(zipBlob, 'zip');
+                downloadSecurely(typedBlob, 'json_coosalud_procesados.zip');
                 
-                if (selectionMode === 'folder') {
-                    setSelectedFolder(fileList.files);
-                } else {
-                    setSelectedFiles(fileList.files);
+                // Mostrar resumen como el script Python
+                console.log("🔹 Proceso de copiado y renombrado finalizado.");
+                console.log("\n📊 Resumen del proceso:");
+                console.log(`✔️ Carpetas copiadas y renombradas: ${carpetasCopiadas}`);
+                console.log(`✔️ Archivos renombrados: ${archivosRenombrados}`);
+                console.log(`✔️ Número total de CUV modificados correctamente: ${cuvModificados}`);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: MESSAGES.success.coosalud,
+                    text: 'Descarga iniciada automáticamente',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('success')
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: MESSAGES.info.noFiles,
+                    text: 'No se encontraron carpetas que requieran procesamiento para Coosalud',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('info')
+                });
+            }
+
+        } catch (error) {
+            console.error('Error en procesamiento Coosalud:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            Swal.fire({
+                icon: 'error',
+                title: MESSAGES.error.processing,
+                text: errorMessage,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('error')
+            });
+        } finally {
+            setIsProcessing(false);
+            setProcessingType(null);
+        }
+    };
+
+    const handleValidarSOS = async () => {
+        const files = getSelectedFiles();
+        if (!files || files.length === 0) {
+            const message = selectionMode === 'folder'
+                ? 'Por favor selecciona una carpeta con archivos JSON'
+                : 'Por favor selecciona archivos JSON para validar';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Archivos requeridos',
+                text: message,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('warning')
+            });
+            return;
+        }
+
+        setIsProcessing(true);
+        setProcessingType('validar-sos');
+
+        try {
+            const JSZip = (await import('jszip')).default;
+            
+            console.log(`Validando ${files.length} archivos S.O.S...`);
+            
+            const carpetas = organizeFilesByFolder(files, ['.json']);
+            const zip = new JSZip();
+            let carpetasProcesadas = 0;
+            let archivosValidados = 0;
+            
+            for (const [nombreCarpeta, archivos] of Object.entries(carpetas)) {
+                carpetasProcesadas++;
+                
+                for (const archivo of archivos) {
+                    try {
+                        if (archivo.name.toLowerCase().endsWith('.json')) {
+                            const contenidoTexto = await leerArchivo(archivo);
+                            const data = JSON.parse(contenidoTexto);
+                            
+                            // Validación S.O.S
+                            if (data.ResultadosValidacion && Array.isArray(data.ResultadosValidacion)) {
+                                const hasErrors = data.ResultadosValidacion.some(
+                                    (item: any) => item.Clase === 'ERROR' || item.Clase === 'RECHAZO'
+                                );
+                                
+                                if (hasErrors) {
+                                    archivosValidados++;
+                                }
+                            }
+                            
+                            const rutaRelativa = archivo.webkitRelativePath || `${nombreCarpeta}/${archivo.name}`;
+                            zip.file(rutaRelativa, archivo);
+                        }
+                    } catch (error) {
+                        console.error(`Error procesando ${archivo.name}:`, error);
+                    }
                 }
             }
+            
+            if (carpetasProcesadas > 0) {
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+                const typedBlob = createTypedBlob(zipBlob, 'zip');
+                downloadSecurely(typedBlob, 'validacion_sos.zip');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: MESSAGES.success.sos,
+                    text: `${archivosValidados} archivos con errores detectados`,
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('success')
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: MESSAGES.info.noFiles,
+                    text: 'No se encontraron archivos JSON para validar',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('info')
+                });
+            }
+
+        } catch (error) {
+            console.error('Error en validación S.O.S:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            Swal.fire({
+                icon: 'error',
+                title: MESSAGES.error.processing,
+                text: errorMessage,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('error')
+            });
+        } finally {
+            setIsProcessing(false);
+            setProcessingType(null);
         }
+    };
+
+    const handleConvertToExcel = async () => {
+        const files = getSelectedFiles();
+        if (!files || files.length === 0) {
+            const message = selectionMode === 'folder'
+                ? 'Por favor selecciona una carpeta con archivos JSON'
+                : 'Por favor selecciona archivos JSON para convertir';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Archivos requeridos',
+                text: message,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('warning')
+            });
+            return;
+        }
+
+        setIsProcessing(true);
+        setProcessingType('convertir-excel');
+
+        try {
+            const XLSX = (await import('xlsx')).default;
+            const JSZip = (await import('jszip')).default;
+            
+            console.log(`Convirtiendo ${files.length} archivos a Excel...`);
+            
+            const carpetas = organizeFilesByFolder(files, ['.json']);
+            const zip = new JSZip();
+            let archivosConvertidos = 0;
+            
+            for (const [nombreCarpeta, archivos] of Object.entries(carpetas)) {
+                for (const archivo of archivos) {
+                    try {
+                        if (archivo.name.toLowerCase().endsWith('.json')) {
+                            const contenidoTexto = await leerArchivo(archivo);
+                            const data = JSON.parse(contenidoTexto);
+                            
+                            // Convertir a Excel
+                            const worksheet = XLSX.utils.json_to_sheet([data]);
+                            const workbook = XLSX.utils.book_new();
+                            XLSX.utils.book_append_sheet(workbook, worksheet, 'Datos');
+                            
+                            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                            const excelBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                            
+                            const nombreExcel = archivo.name.replace('.json', '.xlsx');
+                            const rutaExcel = `${nombreCarpeta}/${nombreExcel}`;
+                            
+                            zip.file(rutaExcel, excelBlob);
+                            archivosConvertidos++;
+                        }
+                    } catch (error) {
+                        console.error(`Error convirtiendo ${archivo.name}:`, error);
+                    }
+                }
+            }
+            
+            if (archivosConvertidos > 0) {
+                const zipBlob = await zip.generateAsync({
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+                const typedBlob = createTypedBlob(zipBlob, 'zip');
+                downloadSecurely(typedBlob, 'archivos_excel.zip');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: MESSAGES.success.excel,
+                    text: `${archivosConvertidos} archivos convertidos a Excel`,
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('success')
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: MESSAGES.info.noFiles,
+                    text: 'No se encontraron archivos JSON para convertir',
+                    confirmButtonText: 'Entendido',
+                    ...getSwalConfig('info')
+                });
+            }
+
+        } catch (error) {
+            console.error('Error en conversión a Excel:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            Swal.fire({
+                icon: 'error',
+                title: MESSAGES.error.processing,
+                text: errorMessage,
+                confirmButtonText: 'Entendido',
+                ...getSwalConfig('error')
+            });
+        } finally {
+            setIsProcessing(false);
+            setProcessingType(null);
+        }
+    };
+
+    const handleFolderSelect = (files: FileList) => {
+        setSelectedFolder(files);
+        setSelectionMode('folder');
+    };
+
+    const handleFilesSelect = (files: FileList) => {
+        setSelectedFiles(files);
+        setSelectionMode('files');
     };
 
     return (
         <>
             <Head title="CUVS - Evaristools">
-                <meta name="description" content="Sistema de conversión y procesamiento de archivos RIPS JSON para el Hospital Universitario del Valle" />
+                <meta name="description" content="Herramienta de procesamiento de archivos CUVS - Hospital Universitario del Valle" />
             </Head>
 
             <div className="min-h-screen bg-white dark:bg-slate-900">
                 <ToolPageHeader
                     title="CUVS"
-                    description="Rips JSON - HUV"
+                    description="Procesamiento de archivos de facturación electrónica"
                     icon={FileText}
-                    showPopularBadge={false}
                 />
 
                 <div className="container mx-auto px-4 py-8">
-                    <div className="max-w-6xl mx-auto space-y-6">
-                        {/* Mode Selector */}
-                        <Card data-tour="mode">
-                            <CardContent className="p-4">
-                                <div className="flex items-center justify-center gap-4">
-                                    <Button
-                                        variant={selectionMode === 'folder' ? 'default' : 'outline'}
-                                        onClick={() => {
-                                            setSelectionMode('folder');
-                                            setSelectedFiles(null);
-                                        }}
-                                        className="gap-2"
-                                    >
-                                        <FolderOpen className="h-4 w-4" />
-                                        Carpetas
-                                    </Button>
-                                    <Button
-                                        variant={selectionMode === 'files' ? 'default' : 'outline'}
-                                        onClick={() => {
-                                            setSelectionMode('files');
-                                            setSelectedFolder(null);
-                                        }}
-                                        className="gap-2"
-                                    >
-                                        <Upload className="h-4 w-4" />
-                                        Archivos
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    <div className="max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                            {/* Left Column: File Selection */}
+                            <div className="space-y-6" data-tour="upload">
+                                <ToolCard
+                                    title="Seleccionar Archivos"
+                                    description="Elige entre carpeta completa o archivos individuales"
+                                    icon={Upload}
+                                >
+                                    <Tabs value={selectionMode} onValueChange={(value) => setSelectionMode(value as 'folder' | 'files')}>
+                                        <TabsList className="grid w-full grid-cols-2">
+                                            <TabsTrigger value="folder">
+                                                <FolderOpen className="h-4 w-4 mr-2" />
+                                                Carpeta
+                                            </TabsTrigger>
+                                            <TabsTrigger value="files">
+                                                <FileText className="h-4 w-4 mr-2" />
+                                                Archivos
+                                            </TabsTrigger>
+                                        </TabsList>
 
-                        {/* Tools Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-tour="tools">
-                            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={handleComprimirPDF}>
-                                <CardContent className="p-6 text-center">
-                                    <div className="mb-4 flex justify-center">
-                                        <div className="p-3 bg-institutional/10 rounded-full">
-                                            <FileText className="h-8 w-8 text-institutional" />
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">Comprimir PDFs</h3>
-                                    <p className="text-sm text-muted-foreground">Mantiene estructura de carpetas</p>
-                                </CardContent>
-                            </Card>
+                                        <TabsContent value="folder" className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Seleccionar Carpeta</Label>
+                                                <input
+                                                    ref={folderInputRef}
+                                                    type="file"
+                                                    /* @ts-ignore */
+                                                    webkitdirectory=""
+                                                    directory=""
+                                                    multiple
+                                                    onChange={(e) => e.target.files && handleFolderSelect(e.target.files)}
+                                                    className="hidden"
+                                                />
+                                                <Button
+                                                    onClick={() => folderInputRef.current?.click()}
+                                                    variant="outline"
+                                                    className="w-full"
+                                                >
+                                                    <FolderOpen className="h-4 w-4 mr-2" />
+                                                    Seleccionar Carpeta
+                                                </Button>
+                                                {selectedFolder && (
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                                                            {selectedFolder.length} archivos seleccionados
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TabsContent>
 
-                            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={handleProcessJsonSOS}>
-                                <CardContent className="p-6 text-center">
-                                    <div className="mb-4 flex justify-center">
-                                        <div className="p-3 bg-institutional/10 rounded-full">
-                                            <Shield className="h-8 w-8 text-institutional" />
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">Convertir Estructura JSON EPS S.O.S</h3>
-                                    <p className="text-sm text-muted-foreground">Para EPS S.O.S</p>
-                                </CardContent>
-                            </Card>
+                                        <TabsContent value="files" className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Seleccionar Archivos</Label>
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    multiple
+                                                    onChange={(e) => e.target.files && handleFilesSelect(e.target.files)}
+                                                    className="hidden"
+                                                />
+                                                <Button
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    variant="outline"
+                                                    className="w-full"
+                                                >
+                                                    <FileText className="h-4 w-4 mr-2" />
+                                                    Seleccionar Archivos
+                                                </Button>
+                                                {selectedFiles && (
+                                                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                                                            {selectedFiles.length} archivos seleccionados
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TabsContent>
+                                    </Tabs>
+                                </ToolCard>
+                            </div>
 
-                            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={handleValidarOtrasEPS}>
-                                <CardContent className="p-6 text-center">
-                                    <div className="mb-4 flex justify-center">
-                                        <div className="p-3 bg-institutional/10 rounded-full">
-                                            <Building2 className="h-8 w-8 text-institutional" />
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">Convertir Estructura JSON otras EPS</h3>
-                                    <p className="text-sm text-muted-foreground">Para otras EPS</p>
-                                </CardContent>
-                            </Card>
+                            {/* Right Column: Operations */}
+                            <div className="space-y-6" data-tour="operations">
+                                <ToolCard
+                                    title="Operaciones Disponibles"
+                                    description="Selecciona la operación que deseas realizar"
+                                    icon={Activity}
+                                >
+                                    <div className="space-y-3">
+                                        <Button
+                                            onClick={handleComprimirPDF}
+                                            disabled={isProcessing || !getSelectedFiles()}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            <FileText className="h-4 w-4 mr-2" />
+                                            {processingType === 'comprimir-pdf' ? 'Comprimiendo...' : 'Comprimir PDFs'}
+                                        </Button>
 
-                            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={handleConvertToCoosalud}>
-                                <CardContent className="p-6 text-center">
-                                    <div className="mb-4 flex justify-center">
-                                        <div className="p-3 bg-institutional/10 rounded-full">
-                                            <Building2 className="h-8 w-8 text-institutional" />
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">Convertir Estructura JSON EPS Coosalud</h3>
-                                    <p className="text-sm text-muted-foreground">Para EPS Coosalud</p>
-                                </CardContent>
-                            </Card>
+                                        <Button
+                                            onClick={handleConvertToCoosalud}
+                                            disabled={isProcessing || !getSelectedFiles()}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            <Building2 className="h-4 w-4 mr-2" />
+                                            {processingType === 'coosalud' ? 'Procesando...' : 'Procesar Coosalud'}
+                                        </Button>
 
-                            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={handleGenerarExcel}>
-                                <CardContent className="p-6 text-center">
-                                    <div className="mb-4 flex justify-center">
-                                        <div className="p-3 bg-institutional/10 rounded-full">
-                                            <FileSpreadsheet className="h-8 w-8 text-institutional" />
-                                        </div>
+                                        <Button
+                                            onClick={handleValidarOtrasEPS}
+                                            disabled={isProcessing || !getSelectedFiles()}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            <Shield className="h-4 w-4 mr-2" />
+                                            {processingType === 'otras-eps' ? 'Procesando...' : 'Procesar Otras EPS'}
+                                        </Button>
+
+                                        <Button
+                                            onClick={handleValidarSOS}
+                                            disabled={isProcessing || !getSelectedFiles()}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            <Activity className="h-4 w-4 mr-2" />
+                                            {processingType === 'validar-sos' ? 'Validando...' : 'Validar S.O.S'}
+                                        </Button>
+
+                                        <Button
+                                            onClick={handleConvertToExcel}
+                                            disabled={isProcessing || !getSelectedFiles()}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                            {processingType === 'convertir-excel' ? 'Convirtiendo...' : 'Convertir a Excel'}
+                                        </Button>
+
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
                                     </div>
-                                    <h3 className="text-lg font-semibold mb-2">Convertir JSON a EXCEL</h3>
-                                    <p className="text-sm text-muted-foreground">JSON a Excel</p>
-                                </CardContent>
-                            </Card>
+                                </ToolCard>
+                            </div>
                         </div>
-
-                        {/* Upload Zone */}
-                        <Card 
-                            className={`cursor-pointer transition-all ${isDragOver ? 'border-institutional border-2 bg-institutional/5' : ''}`}
-                            onDragOver={handleDragOver}
-                            onDragEnter={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                            onClick={handleFileSelect}
-                            data-tour="upload"
-                        >
-                            <CardContent className="p-12 text-center">
-                                <div className="mb-6 flex justify-center">
-                                    {selectionMode === 'folder' ? (
-                                        <FolderOpen className={`h-16 w-16 ${(selectedFolder) ? 'text-green-600' : 'text-muted-foreground'}`} />
-                                    ) : (
-                                        <Upload className={`h-16 w-16 ${(selectedFiles) ? 'text-green-600' : 'text-muted-foreground'}`} />
-                                    )}
-                                </div>
-                                <div className="space-y-2">
-                                    {(selectedFolder || selectedFiles) ? (
-                                        <>
-                                            <h3 className="text-lg font-semibold text-green-700 dark:text-green-300">
-                                                {selectionMode === 'folder' ? 'Carpeta seleccionada' : 'Archivos seleccionados'}
-                                            </h3>
-                                            <p className="text-sm text-green-600 dark:text-green-400">
-                                                {(selectedFolder || selectedFiles)?.length} archivos detectados
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Haz clic para seleccionar otros {selectionMode === 'folder' ? 'carpeta' : 'archivos'}
-                                            </p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <h3 className="text-lg font-semibold text-foreground">
-                                                {selectionMode === 'folder' ? 'Arrastra una carpeta aquí' : 'Arrastra archivos aquí'}
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {selectionMode === 'folder' 
-                                                    ? 'Se mantendrá la estructura completa de carpetas'
-                                                    : 'Selecciona múltiples archivos para procesar'
-                                                }
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
-                                {!(selectedFolder || selectedFiles) && (
-                                    <Button size="lg" className="gap-2 mt-6" onClick={(e) => { e.stopPropagation(); handleFileSelect(); }}>
-                                        {selectionMode === 'folder' ? (
-                                            <>
-                                                <FolderOpen className="h-5 w-5" />
-                                                Seleccionar Carpeta
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Upload className="h-5 w-5" />
-                                                Seleccionar Archivos
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Tour Button */}
-                        <div className="text-center">
-                            <Button
-                                onClick={startTour}
-                                variant="outline"
-                                className="border-institutional text-institutional hover:bg-institutional/10"
-                            >
-                                <HelpCircle className="mr-2 h-4 w-4" />
-                                ¿Cómo funciona? - Tour Interactivo
-                            </Button>
-                        </div>
-
-                        {/* Hidden inputs */}
-                        <input
-                            ref={folderInputRef}
-                            type="file"
-                            {...({ webkitdirectory: "" } as any)}
-                            multiple
-                            style={{ display: 'none' }}
-                            onChange={handleFileChange}
-                            accept="*/*"
-                        />
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            multiple
-                            style={{ display: 'none' }}
-                            onChange={handleFileChange}
-                            accept=".pdf,.json,.xml,.xlsx"
-                        />
                     </div>
                 </div>
             </div>
