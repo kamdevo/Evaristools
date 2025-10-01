@@ -480,7 +480,7 @@ export default function SplitPDF() {
                                             <div className="flex gap-2">
                                                 <Button
                                                     onClick={downloadAll}
-                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                    className="flex-1 bg-institutional hover:bg-institutional/90"
                                                 >
                                                     <Download className="h-4 w-4 mr-2" />
                                                     Descargar Todos
