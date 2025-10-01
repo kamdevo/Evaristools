@@ -204,10 +204,10 @@ export default function CropPDF() {
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             {/* Left Column */}
-                            <div className="space-y-6" data-tour="upload">
+                            <div className="space-y-6">
                                 {/* Upload Section */}
                                 {!pdfFile && (
-                                    <ToolCard title="Seleccionar PDF" data-tour="upload-zone">
+                                    <ToolCard title="Seleccionar PDF" data-tour="upload">
                                         <FileUploadZone
                                             onFileSelect={handleFileSelect}
                                             acceptedTypes=".pdf"

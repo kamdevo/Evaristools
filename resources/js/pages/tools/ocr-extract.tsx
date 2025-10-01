@@ -5,8 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Download, Upload, Loader2, Eye, Copy, ScanText } from 'lucide-react';
+import { FileText, Upload, Download, Copy, Loader2, Eye, HelpCircle, ScanText, StickyNote } from 'lucide-react';
 import { createWorker } from 'tesseract.js';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -31,6 +33,46 @@ export default function OCRExtract() {
     });
     
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir Imagen',
+                        description: 'Selecciona una imagen (JPG, PNG, etc.) que contenga texto. El sistema usará OCR para extraer el texto automáticamente.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar OCR',
+                        description: 'Selecciona el idioma del texto en la imagen. El OCR funciona mejor con imágenes de alta calidad y texto claro.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Ver Resultados',
+                        description: 'El texto extraído aparecerá aquí. Puedes copiarlo, descargarlo como TXT o exportarlo a Word.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
     const dropZoneRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -207,6 +249,7 @@ export default function OCRExtract() {
                             <div className="space-y-6">
                                 <ToolCard
                                     title="Subir Imagen"
+                                    data-tour="upload"
                                     description="Selecciona una imagen para extraer el texto mediante OCR"
                                     icon={Upload}
                                 >
@@ -270,8 +313,45 @@ export default function OCRExtract() {
 
                             {/* Options and Results Section */}
                             <div className="space-y-6">
+                                {/* Results Section */}
+                                {extractedText && (
+                                    <ToolCard
+                                        title="Texto Extraído"
+                                        data-tour="actions"
+                                        description={`Idioma: ${getLanguageLabel(options.language)} - Confianza: ${confidence}%`}
+                                        icon={ScanText}
+                                    >
+                                            <textarea
+                                                ref={textareaRef}
+                                                value={extractedText}
+                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExtractedText(e.target.value)}
+                                                placeholder="El texto extraído aparecerá aquí..."
+                                                className="min-h-48 resize-vertical w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-institutional focus:border-transparent"
+                                                rows={12}
+                                            />
+
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={copyToClipboard}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    <Copy className="h-4 w-4 mr-2" />
+                                                    Copiar
+                                                </Button>
+                                                <Button
+                                                    onClick={downloadText}
+                                                    className="flex-1 bg-institutional hover:bg-institutional/90 text-white"
+                                                >
+                                                    <Download className="h-4 w-4 mr-2" />
+                                                    Descargar
+                                                </Button>
+                                            </div>
+                                        </ToolCard>
+                                )}
                                 <ToolCard
                                     title="Opciones de OCR"
+                                    data-tour="options"
                                     description="Configura el reconocimiento óptico de caracteres"
                                     icon={ScanText}
                                 >
@@ -320,50 +400,15 @@ export default function OCRExtract() {
                                             showPercentage={true}
                                         />
                                     )}
-                                </ToolCard>
-
-                                {/* Results Section */}
-                                {extractedText && (
-                                    <ToolCard
-                                        title={
-                                            <div className="flex items-center justify-between w-full">
-                                                <span>Texto Extraído</span>
-                                                <Badge variant="outline" className="text-xs">
-                                                    Confianza: {confidence}%
-                                                </Badge>
-                                            </div>
-                                        }
-                                        description={`Idioma: ${getLanguageLabel(options.language)}`}
-                                        icon={ScanText}
+                                    <Button
+                                        onClick={startTour}
+                                        variant="outline"
+                                        className="w-full border-institutional text-institutional hover:bg-institutional/10"
                                     >
-                                            <textarea
-                                                ref={textareaRef}
-                                                value={extractedText}
-                                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setExtractedText(e.target.value)}
-                                                placeholder="El texto extraído aparecerá aquí..."
-                                                className="min-h-48 resize-vertical w-full p-3 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-institutional focus:border-transparent"
-                                                rows={12}
-                                            />
-
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    onClick={copyToClipboard}
-                                                    variant="outline"
-                                                    className="flex-1"
-                                                >
-                                                    <Copy className="h-4 w-4 mr-2" />
-                                                    Copiar
-                                                </Button>
-                                                <Button
-                                                    onClick={downloadText}
-                                                    className="flex-1 bg-institutional hover:bg-institutional/90 text-white"
-                                                >
-                                                    <Download className="h-4 w-4 mr-2" />
-                                                    Descargar
-                                                </Button>
-                                            </div>
-                                    </ToolCard>
-                                )}
+                                        <HelpCircle className="mr-2 h-4 w-4" />
+                                        ¿Cómo funciona? - Tour Interactivo
+                                    </Button>
+                                </ToolCard>
                             </div>
                         </div>
                     </div>

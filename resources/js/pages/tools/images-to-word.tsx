@@ -2,9 +2,11 @@ import { useState, useRef, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Download, Trash2, Loader2, Eye, FileText } from 'lucide-react';
+import { Upload, Download, Trash2, Loader2, Eye, FileText, HelpCircle } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -43,6 +45,46 @@ export default function ImagesToWord() {
     });
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir Imágenes',
+                        description: 'Selecciona imágenes con texto que deseas convertir a Word. El OCR extraerá el texto automáticamente.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Documento',
+                        description: 'Ajusta el formato del documento Word: tamaño de fuente, tipo de letra, alineación y espaciado.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Crear Documento Word',
+                        description: 'Haz clic en "Convertir a Word" para procesar las imágenes y generar el documento editable.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = useCallback(async (files: FileList) => {
         const validImageTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff'];
@@ -330,6 +372,7 @@ export default function ImagesToWord() {
                                     title="Subir Imágenes"
                                     description="Selecciona imágenes con texto para convertir a Word. Soporta JPG, PNG, BMP y TIFF."
                                     icon={Upload}
+                                    data-tour="upload"
                                 >
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
@@ -347,11 +390,11 @@ export default function ImagesToWord() {
                                 </ToolCard>
 
                                 {/* Document Options */}
-                                {images.length > 0 && (
-                                    <ToolCard
-                                        title="Opciones del Documento"
-                                        description="Configura el formato del documento Word resultante"
-                                    >
+                                <ToolCard
+                                    title="Opciones del Documento"
+                                    description="Configura el formato del documento Word resultante"
+                                    data-tour="options"
+                                >
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="fontSize">Tamaño de fuente</Label>
@@ -432,8 +475,7 @@ export default function ImagesToWord() {
                                                     <span className="text-sm text-slate-700 dark:text-slate-300">Salto de página entre imágenes</span>
                                                 </label>
                                             </div>
-                                    </ToolCard>
-                                )}
+                                </ToolCard>
                             </div>
 
                             {/* Images List & Actions */}
@@ -512,7 +554,8 @@ export default function ImagesToWord() {
                                 )}
 
                                 {/* Actions */}
-                                <ToolCard title="Generar Documento">
+                                <ToolCard title="Generar Documento" data-tour="actions">
+                                    <div className="space-y-3">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={processImagesAndCreateDocument}
@@ -540,6 +583,15 @@ export default function ImagesToWord() {
                                                 Agregar más imágenes
                                             </Button>
                                         </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
+                                    </div>
                                 </ToolCard>
                             </div>
                         </div>

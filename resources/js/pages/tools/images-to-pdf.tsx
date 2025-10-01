@@ -2,8 +2,10 @@ import { useState, useRef, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, Download, Trash2, MoveUp, MoveDown, Loader2, FileCheck } from 'lucide-react';
+import { FileImage, Upload, Download, Trash2, ArrowUp, ArrowDown, Loader2, HelpCircle } from 'lucide-react';
 import { PDFDocument, PageSizes } from 'pdf-lib';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -36,6 +38,46 @@ export default function ImagesToPDF() {
     });
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir Imágenes',
+                        description: 'Selecciona múltiples imágenes (JPG, PNG, etc.) que deseas convertir en un solo PDF. Puedes arrastrarlas o hacer clic para seleccionar.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar PDF',
+                        description: 'Ajusta el tamaño de página, orientación y márgenes. Puedes reordenar las imágenes arrastrándolas en la lista.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Crear PDF',
+                        description: 'Haz clic en "Crear PDF" para generar el documento. El PDF se descargará automáticamente con todas tus imágenes.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const loadImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
         return new Promise((resolve) => {
@@ -223,20 +265,16 @@ export default function ImagesToPDF() {
                 <ToolPageHeader
                     title="Imágenes a PDF"
                     description="Convierte múltiples imágenes en un documento PDF"
-                    icon={FileCheck}
+                    icon={FileImage}
                 />
 
                 {/* Main Content */}
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {/* Upload Section */}
+                            {/* Left Column: Upload & Image List */}
                             <div className="space-y-6">
-                                <ToolCard
-                                    title="Subir Imágenes"
-                                    description="Selecciona múltiples imágenes para convertir a PDF. Soporta JPG, PNG, WEBP, BMP y TIFF."
-                                    icon={Upload}
-                                >
+                                <ToolCard title="Seleccionar Imágenes" data-tour="upload">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
                                         acceptedTypes="image/*"
@@ -253,77 +291,69 @@ export default function ImagesToPDF() {
                                 </ToolCard>
 
                                 {/* Page Options */}
-                                {images.length > 0 && (
-                                    <ToolCard
-                                        title="Opciones del PDF"
-                                        description="Configura el formato y la apariencia del PDF resultante"
-                                    >
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="pageSize">Tamaño de página</Label>
-                                                    <select
-                                                        id="pageSize"
-                                                        value={pageOptions.size}
-                                                        onChange={(e) => setPageOptions(prev => ({ ...prev, size: e.target.value as keyof typeof PageSizes }))}
-                                                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
-                                                    >
-                                                        <option value="A4">A4</option>
-                                                        <option value="A3">A3</option>
-                                                        <option value="A5">A5</option>
-                                                        <option value="Letter">Letter</option>
-                                                        <option value="Legal">Legal</option>
-                                                    </select>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="orientation">Orientación</Label>
-                                                    <select
-                                                        id="orientation"
-                                                        value={pageOptions.orientation}
-                                                        onChange={(e) => setPageOptions(prev => ({ ...prev, orientation: e.target.value as 'portrait' | 'landscape' }))}
-                                                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
-                                                    >
-                                                        <option value="portrait">Vertical</option>
-                                                        <option value="landscape">Horizontal</option>
-                                                    </select>
-                                                </div>
+                                <ToolCard title="Opciones de PDF" data-tour="options">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="pageSize">Tamaño de página</Label>
+                                                <select
+                                                    id="pageSize"
+                                                    value={pageOptions.size}
+                                                    onChange={(e) => setPageOptions(prev => ({ ...prev, size: e.target.value as keyof typeof PageSizes }))}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
+                                                >
+                                                    <option value="A4">A4</option>
+                                                    <option value="A3">A3</option>
+                                                    <option value="A5">A5</option>
+                                                    <option value="Letter">Letter</option>
+                                                    <option value="Legal">Legal</option>
+                                                </select>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="margin">Margen (px)</Label>
-                                                    <input
-                                                        id="margin"
-                                                        type="number"
-                                                        min="0"
-                                                        max="200"
-                                                        value={pageOptions.margin}
-                                                        onChange={(e) => setPageOptions(prev => ({ ...prev, margin: parseInt(e.target.value) || 50 }))}
-                                                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="quality">Calidad (%)</Label>
-                                                    <input
-                                                        id="quality"
-                                                        type="number"
-                                                        min="50"
-                                                        max="100"
-                                                        value={pageOptions.quality}
-                                                        onChange={(e) => setPageOptions(prev => ({ ...prev, quality: parseInt(e.target.value) || 85 }))}
-                                                        className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
-                                                    />
-                                                </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="orientation">Orientación</Label>
+                                                <select
+                                                    id="orientation"
+                                                    value={pageOptions.orientation}
+                                                    onChange={(e) => setPageOptions(prev => ({ ...prev, orientation: e.target.value as 'portrait' | 'landscape' }))}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
+                                                >
+                                                    <option value="portrait">Vertical</option>
+                                                    <option value="landscape">Horizontal</option>
+                                                </select>
                                             </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="margin">Margen (px)</Label>
+                                                <input
+                                                    id="margin"
+                                                    type="number"
+                                                    min="0"
+                                                    max="200"
+                                                    value={pageOptions.margin}
+                                                    onChange={(e) => setPageOptions(prev => ({ ...prev, margin: parseInt(e.target.value) || 50 }))}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="quality">Calidad (%)</Label>
+                                                <input
+                                                    id="quality"
+                                                    type="number"
+                                                    min="50"
+                                                    max="100"
+                                                    value={pageOptions.quality}
+                                                    onChange={(e) => setPageOptions(prev => ({ ...prev, quality: parseInt(e.target.value) || 85 }))}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-institutional focus:border-institutional"
+                                                />
+                                            </div>
+                                        </div>
                                 </ToolCard>
-                                )}
                             </div>
 
-                            {/* Images List & Actions */}
+                            {/* Right Column: Always visible */}
                             <div className="space-y-6">
                                 {images.length > 0 && (
-                                    <ToolCard
-                                        title={`Imágenes seleccionadas (${images.length})`}
-                                        description="Reordena las imágenes para cambiar el orden en el PDF"
-                                    >
+                                    <ToolCard title={`Imágenes seleccionadas (${images.length})`}>
                                         <div className="flex justify-end mb-4">
                                             <Button
                                                 variant="outline"
@@ -335,49 +365,49 @@ export default function ImagesToPDF() {
                                                 Limpiar todo
                                             </Button>
                                         </div>
-                                            <div className="space-y-3 max-h-96 overflow-y-auto">
-                                                {images.map((image, index) => (
-                                                    <div key={image.id} className="flex items-center space-x-4 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800">
-                                                        <img
-                                                            src={image.url}
-                                                            alt={`Imagen ${index + 1}`}
-                                                            className="w-16 h-16 object-cover rounded-lg border border-slate-300 dark:border-slate-600"
-                                                        />
-                                                        <div className="flex-1">
-                                                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{image.file.name}</p>
-                                                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                                {image.width} × {image.height} px • {(image.file.size / 1024 / 1024).toFixed(2)} MB
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center space-x-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => moveImage(image.id, 'up')}
-                                                                disabled={index === 0}
-                                                            >
-                                                                <MoveUp className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => moveImage(image.id, 'down')}
-                                                                disabled={index === images.length - 1}
-                                                            >
-                                                                <MoveDown className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => removeImage(image.id)}
-                                                                className="text-red-600 hover:text-red-700"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
+                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                            {images.map((image, index) => (
+                                                <div key={image.id} className="flex items-center space-x-4 p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800">
+                                                    <img
+                                                        src={image.url}
+                                                        alt={`Imagen ${index + 1}`}
+                                                        className="w-16 h-16 object-cover rounded-lg border border-slate-300 dark:border-slate-600"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{image.file.name}</p>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {image.width} × {image.height} px • {(image.file.size / 1024 / 1024).toFixed(2)} MB
+                                                        </p>
                                                     </div>
-                                                ))}
-                                            </div>
+                                                    <div className="flex items-center space-x-1">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => moveImage(image.id, 'up')}
+                                                            disabled={index === 0}
+                                                        >
+                                                            <ArrowUp className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => moveImage(image.id, 'down')}
+                                                            disabled={index === images.length - 1}
+                                                        >
+                                                            <ArrowDown className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeImage(image.id)}
+                                                            className="text-red-600 hover:text-red-700"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </ToolCard>
                                 )}
 
@@ -398,34 +428,44 @@ export default function ImagesToPDF() {
                                 )}
 
                                 {/* Actions */}
-                                <ToolCard title="Generar PDF">
+                                <ToolCard title="Generar PDF" data-tour="actions">
+                                    <div className="space-y-3">
                                         <div className="flex flex-col sm:flex-row gap-4">
-                                            <Button
-                                                onClick={convertToPDF}
-                                                disabled={images.length === 0 || isProcessing}
-                                                className="flex-1 bg-institutional hover:bg-institutional/90"
-                                            >
-                                                {isProcessing ? (
-                                                    <>
-                                                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                                                        Procesando...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Download className="h-5 w-5 mr-2" />
-                                                        Convertir a PDF
-                                                    </>
-                                                )}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={isProcessing}
-                                            >
-                                                <Upload className="h-5 w-5 mr-2" />
-                                                Agregar más imágenes
-                                            </Button>
+                                        <Button
+                                            onClick={convertToPDF}
+                                            disabled={images.length === 0 || isProcessing}
+                                            className="flex-1 bg-institutional hover:bg-institutional/90"
+                                        >
+                                            {isProcessing ? (
+                                                <>
+                                                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                                    Procesando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Download className="h-5 w-5 mr-2" />
+                                                    Convertir a PDF
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isProcessing}
+                                        >
+                                            <Upload className="h-5 w-5 mr-2" />
+                                            Agregar más imágenes
+                                        </Button>
                                         </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
+                                    </div>
                                 </ToolCard>
                             </div>
                         </div>

@@ -189,9 +189,9 @@ export default function SignPDF() {
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
                             {/* Left Column: File Upload and Info */}
-                            <div className="space-y-6" data-tour="upload">
+                            <div className="space-y-6">
                                 {!pdfFile && (
-                                    <ToolCard title="Seleccionar PDF a Firmar">
+                                    <ToolCard title="Seleccionar PDF a Firmar" data-tour="upload">
                                     <FileUploadZone
                                         onFileSelect={handlePdfSelect}
                                         acceptedTypes=".pdf"
