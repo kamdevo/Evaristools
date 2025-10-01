@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { SharedData } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Search, FileText, QrCode, FileLock, FileUp, FileDown, FolderOutput, ArrowDown01, StickyNote, BookA, Building2, Lock, Image, Activity } from 'lucide-react';
+import { Search, FileText, QrCode, FileLock, FileUp, FileDown, FolderOutput, ArrowDown01, StickyNote, BookA, Building2, Lock, Image, Activity, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -223,6 +223,14 @@ const toolCategories: ToolCategory[] = [
                 icon: Activity,
                 category: 'hospital-tools',
                 popular: true
+            },
+            {
+                id: 'evarisdrop',
+                title: 'Evarisdrop',
+                description: 'Sistema de transferencia de archivos entre dispositivos en tiempo real',
+                icon: Share2,
+                category: 'hospital-tools',
+                popular: true
             }
         ]
     }
@@ -310,8 +318,9 @@ export default function Evaristools({ shared }: { shared: SharedData }) {
             'sign-pdf': '/tools/sign-pdf',
             'protect-pdf': '/tools/protect-pdf',
             'cuvs': '/tools/cuvs',
-            // Add more routes as tools are implemented
-        };
+            'evarisdrop': '/tools/evarisdrop',
+        // Add more routes as tools are implemented
+    };
         return toolRoutes[toolId] || null;
     };
 
