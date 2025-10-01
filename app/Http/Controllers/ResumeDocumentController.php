@@ -10,14 +10,19 @@ use Exception;
 
 class ResumeDocumentController extends Controller
 {
-    private $openRouterApiKey = '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';
+    private $openRouterApiKey;
     private $model = 'deepseek/deepseek-chat-v3.1:free';
+    
+    public function __construct()
+    {
+        $this->openRouterApiKey = env('OPENROUTER_API_KEY');
+    }
     
     public function generate(Request $request)
     {
         try {
             $request->validate([
-                'file' => 'required|file|mimes:pdf,doc,docx,txt|max:10240', // 10MB max
+                'file' => 'required|file|mimes:pdf,docx,txt|max:10240', // 10MB max (removed .doc for compatibility)
                 'length' => 'required|in:short,medium,long',
                 'language' => 'required|in:es,en'
             ]);
@@ -74,24 +79,28 @@ class ResumeDocumentController extends Controller
                     $text = $pdf->getText();
                     break;
 
-                case 'doc':
                 case 'docx':
                     // For Word documents, we need PhpWord
-                    $phpWord = IOFactory::load($file->getRealPath());
-                    $text = '';
-                    
-                    foreach ($phpWord->getSections() as $section) {
-                        foreach ($section->getElements() as $element) {
-                            if (method_exists($element, 'getText')) {
-                                $text .= $element->getText() . "\n";
-                            } elseif (method_exists($element, 'getElements')) {
-                                foreach ($element->getElements() as $childElement) {
-                                    if (method_exists($childElement, 'getText')) {
-                                        $text .= $childElement->getText() . "\n";
+                    try {
+                        $phpWord = IOFactory::load($file->getRealPath());
+                        $text = '';
+                        
+                        foreach ($phpWord->getSections() as $section) {
+                            foreach ($section->getElements() as $element) {
+                                if (method_exists($element, 'getText')) {
+                                    $text .= $element->getText() . "\n";
+                                } elseif (method_exists($element, 'getElements')) {
+                                    foreach ($element->getElements() as $childElement) {
+                                        if (method_exists($childElement, 'getText')) {
+                                            $text .= $childElement->getText() . "\n";
+                                        }
                                     }
                                 }
                             }
                         }
+                    } catch (\Exception $e) {
+                        \Log::error('PhpWord error: ' . $e->getMessage());
+                        throw new Exception('El archivo Word parece estar corrupto o no es un formato válido. Por favor intenta con otro archivo o convértelo a PDF.');
                     }
                     break;
 

@@ -78,12 +78,11 @@ export default function ResumeDocument() {
         const validTypes = [
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-            'application/msword', // .doc
             'text/plain'
         ];
         
         if (!validTypes.includes(selectedFile.type)) {
-            setError('Por favor selecciona un archivo válido (.pdf, .docx, .doc o .txt).');
+            setError('Por favor selecciona un archivo válido (.pdf, .docx o .txt). Nota: archivos .doc antiguos no son soportados, convierte a .docx.');
             return;
         }
 
@@ -195,14 +194,14 @@ export default function ResumeDocument() {
                                     <ToolCard title="Seleccionar Documento" data-tour="upload-zone">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
-                                        acceptedTypes=".pdf,.docx,.doc,.txt"
+                                        acceptedTypes=".pdf,.docx,.txt"
                                         title="Arrastra tu documento aquí"
-                                        subtitle="o haz clic para seleccionar (máximo 10MB)"
+                                        subtitle="PDF, Word (.docx) o TXT (máximo 10MB)"
                                     />
                                     <input
                                         ref={fileInputRef}
                                         type="file"
-                                        accept=".pdf,.docx,.doc,.txt"
+                                        accept=".pdf,.docx,.txt"
                                         onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
                                         className="hidden"
                                     />

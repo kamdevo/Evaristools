@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { SharedData } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Search, FileText, QrCode, FileLock, FileUp, FileDown, FolderOutput, ArrowDown01, StickyNote, BookA, Building2, Lock, Image } from 'lucide-react';
+import { Search, FileText, QrCode, FileLock, FileUp, FileDown, FolderOutput, ArrowDown01, StickyNote, BookA, Building2, Lock, Image, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -209,6 +209,22 @@ const toolCategories: ToolCategory[] = [
                 popular: true
             }
         ]
+    },
+    {
+        id: 'hospital-tools',
+        title: 'Herramientas Hospitalarias',
+        description: 'Procesamiento de archivos RIPS y CUV para EPS',
+        icon: Activity,
+        tools: [
+            {
+                id: 'cuvs',
+                title: 'CUVS - Rips JSON HUV',
+                description: 'Sistema de conversión y procesamiento de archivos RIPS JSON para diferentes EPS',
+                icon: Activity,
+                category: 'hospital-tools',
+                popular: true
+            }
+        ]
     }
 ];
 
@@ -293,6 +309,7 @@ export default function Evaristools({ shared }: { shared: SharedData }) {
             'resume-document': '/tools/resume-document',
             'sign-pdf': '/tools/sign-pdf',
             'protect-pdf': '/tools/protect-pdf',
+            'cuvs': '/tools/cuvs',
             // Add more routes as tools are implemented
         };
         return toolRoutes[toolId] || null;

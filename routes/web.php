@@ -89,11 +89,19 @@ Route::prefix('tools')->name('tools.')->group(function () {
         return Inertia::render('tools/protect-pdf');
     })->name('protect-pdf');
     
+    Route::get('cuvs', function () {
+        return Inertia::render('tools/cuvs');
+    })->name('cuvs');
+    
     // API endpoints for tools
     Route::post('word-to-pdf/convert', [App\Http\Controllers\WordToPDFController::class, 'convert'])->name('word-to-pdf.convert');
     Route::post('resume-document/generate', [App\Http\Controllers\ResumeDocumentController::class, 'generate'])->name('resume-document.generate');
     Route::post('sign-pdf/sign', [App\Http\Controllers\SignPDFController::class, 'sign'])->name('sign-pdf.sign');
     Route::post('protect-pdf/protect', [App\Http\Controllers\ProtectPDFController::class, 'protect'])->name('protect-pdf.protect');
+    
+    // CUVS endpoints
+    Route::post('cuvs/process-json-sos', [App\Http\Controllers\CuvsController::class, 'processJsonSOS'])->name('cuvs.process-json-sos');
+    Route::get('cuvs/download-processed/{filename}', [App\Http\Controllers\CuvsController::class, 'downloadProcessed'])->name('cuvs.download-processed');
 });
 
 // API Routes for Tool Popularity System

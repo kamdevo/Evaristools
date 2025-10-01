@@ -61,10 +61,10 @@ export default function OCRExtract() {
                     }
                 },
                 {
-                    element: '[data-tour="actions"]',
+                    element: '[data-tour="options"]',
                     popover: {
-                        title: 'Paso 3: Ver Resultados',
-                        description: 'El texto extraído aparecerá aquí. Puedes copiarlo, descargarlo como TXT o exportarlo a Word.',
+                        title: 'Paso 3: Extraer y Ver Resultados',
+                        description: 'Haz clic en "Extraer Texto" para procesar la imagen. El texto extraído aparecerá debajo y podrás copiarlo o descargarlo.',
                         side: 'left',
                         align: 'start'
                     }
@@ -317,7 +317,6 @@ export default function OCRExtract() {
                                 {extractedText && (
                                     <ToolCard
                                         title="Texto Extraído"
-                                        data-tour="actions"
                                         description={`Idioma: ${getLanguageLabel(options.language)} - Confianza: ${confidence}%`}
                                         icon={ScanText}
                                     >
