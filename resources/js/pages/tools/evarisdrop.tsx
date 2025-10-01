@@ -13,15 +13,15 @@ export default function Evarisdrop() {
             <div className="min-h-screen bg-white dark:bg-slate-900">
                 <ToolPageHeader
                     title="Evarisdrop"
-                    description="Transferencia de archivos entre dispositivos"
+                    description="Transferencia de archivos entre dispositivos en tiempo real"
                     icon={Share2}
-                    showPopularBadge={false}
+                    showPopularBadge={true}
                 />
 
                 <div className="container mx-auto px-4 py-8">
                     <EvarisdropDashboard
                         appName="Evarisdrop"
-                        maxFileSize={52428800} // 50MB in bytes
+                        maxFileSize={52428800}
                         networkName="Evaristools Network"
                     />
                 </div>

@@ -1,6 +1,5 @@
 import { useState, useRef } from 'react';
 import { Upload, FileText } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface FileDropZoneProps {
@@ -54,24 +53,32 @@ export function FileDropZone({ onFileSelect, maxFileSize = 100 * 1024 * 1024, cl
   };
 
   return (
-    <Card className={`${className} ${isDragOver ? 'border-primary bg-primary/5' : ''}`}>
-      <CardContent 
-        className="p-8"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+    <div 
+      className={`border-2 border-dashed rounded-lg transition-all ${
+        isDragOver 
+          ? 'border-institutional bg-institutional/5' 
+          : 'border-gray-300 dark:border-gray-700'
+      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className="p-8">
         <div className="flex flex-col items-center justify-center text-center space-y-4">
-          <div className={`p-4 rounded-full ${isDragOver ? 'bg-primary/10' : 'bg-muted'}`}>
+          <div className={`p-4 rounded-full transition-colors ${
+            isDragOver 
+              ? 'bg-institutional/10' 
+              : 'bg-muted'
+          }`}>
             {isDragOver ? (
-              <FileText className="w-8 h-8 text-primary" />
+              <FileText className="w-8 h-8 text-institutional" />
             ) : (
               <Upload className="w-8 h-8 text-muted-foreground" />
             )}
           </div>
           
           <div className="space-y-2">
-            <h3 className="font-medium text-lg">
+            <h3 className="font-medium text-lg text-slate-900 dark:text-white">
               {isDragOver ? 'Suelta los archivos aquí' : 'Arrastra archivos aquí para compartir'}
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -82,7 +89,10 @@ export function FileDropZone({ onFileSelect, maxFileSize = 100 * 1024 * 1024, cl
             </p>
           </div>
           
-          <Button onClick={handleBrowseClick} variant="outline">
+          <Button 
+            onClick={handleBrowseClick} 
+            className="bg-institutional hover:bg-institutional/90"
+          >
             Explorar Archivos
           </Button>
           
@@ -94,7 +104,7 @@ export function FileDropZone({ onFileSelect, maxFileSize = 100 * 1024 * 1024, cl
             onChange={handleFileInput}
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

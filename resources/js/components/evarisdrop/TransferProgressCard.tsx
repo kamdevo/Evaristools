@@ -33,7 +33,7 @@ export function TransferProgressCard({ transfer, onCancel, onRetry }: TransferPr
   const canCancel = isActive || transfer.status === TransferStatus.PENDING;
 
   return (
-    <Card className="hover:shadow-sm transition-shadow">
+    <Card className="glass-card border-white/30 bg-white/60 hover:bg-white/80 dark:bg-slate-800/60 dark:hover:bg-slate-800/80 transition-all">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">

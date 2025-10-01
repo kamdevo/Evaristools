@@ -63,7 +63,7 @@ export function EnhancedDeviceCard({ device, onSendFiles, hasQueuedFiles }: Enha
   const canSendFiles = device.status === ConnectionStatus.CONNECTED && hasQueuedFiles;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="glass-card border-white/30 bg-white/60 hover-lift hover:bg-white/80 dark:bg-slate-800/60 dark:hover:bg-slate-800/80">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
@@ -91,9 +91,8 @@ export function EnhancedDeviceCard({ device, onSendFiles, hasQueuedFiles }: Enha
               {canSendFiles && onSendFiles && (
                 <Button
                   size="sm"
-                  variant="outline"
+                  className="ml-2 bg-institutional hover:bg-institutional/90"
                   onClick={() => onSendFiles(device.id)}
-                  className="ml-2"
                 >
                   <Send className="w-3 h-3 mr-1" />
                   Enviar

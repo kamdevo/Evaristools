@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { WifiHigh, Plus, LogIn, Settings, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WifiHigh, Plus, LogIn, Settings, RefreshCw, Upload } from 'lucide-react';
+import ToolCard from '@/components/ToolCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,7 +29,6 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
     username: '',
     roomCode: '',
     isInRoom: false,
-    theme: ThemeMode.LIGHT,
     deviceName: '',
     deviceType: 'laptop' as 'laptop' | 'desktop' | 'mobile' | 'tablet'
   });
@@ -46,19 +45,12 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Apply theme to document
-  useEffect(() => {
-    const isDark = currentUser.theme === ThemeMode.DARK;
-    document.documentElement.classList.toggle('dark', isDark);
-  }, [currentUser.theme]);
 
   const handleUsernameChange = (username: string) => {
     setCurrentUser(prev => ({ ...prev, username }));
   };
 
-  const handleThemeChange = (theme: ThemeMode) => {
-    setCurrentUser(prev => ({ ...prev, theme }));
-  };
+
 
   // Initialize with auto-detected device info
   useEffect(() => {
@@ -418,97 +410,63 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/images/logo.png" 
-              alt="Logo de la institución" 
-              className="h-12 w-auto object-contain"
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-primary">{appName}</h1>
-              <p className="text-muted-foreground">Hospital Universitario del Valle "Evaristo Garcia" E.S.E</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground text-right hidden sm:block">
-              <p>Usuario: <span className="font-medium">{currentUser.username}</span></p>
-              {currentUser.isInRoom && (
-                <p>Sala: <span className="font-medium text-primary">{currentUser.roomCode}</span></p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Left Column - Devices & File Transfer */}
-          <div className="lg:col-span-2 space-y-6">
-
-
+          <div className="space-y-6">
             {/* Devices & File Transfer */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  Dispositivos Disponibles ({devices.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {devices.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <WifiHigh className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No hay dispositivos en la sala</p>
-                    <p className="text-sm">{currentUser.isInRoom ? 'Esperando conexiones...' : 'Únete o crea una sala para comenzar'}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {devices.map((device) => (
-                      <EnhancedDeviceCard 
-                        key={device.id} 
-                        device={device}
-                        hasQueuedFiles={queuedFiles.length > 0}
-                        onSendFiles={() => {
-                          // Auto-send first queued file for demo
-                          const firstQueued = queuedFiles.find(f => f.status === 'queued');
-                          if (firstQueued) {
-                            handleSendFile(firstQueued.id, device.id);
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ToolCard
+              title={`Dispositivos Disponibles (${devices.length})`}
+              description="Dispositivos conectados en tu sala"
+            >
+              {devices.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <WifiHigh className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="font-medium text-slate-900 dark:text-white mb-2">No hay dispositivos en la sala</p>
+                  <p className="text-sm">{currentUser.isInRoom ? 'Esperando conexiones...' : 'Únete o crea una sala para comenzar'}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {devices.map((device) => (
+                    <EnhancedDeviceCard 
+                      key={device.id} 
+                      device={device}
+                      hasQueuedFiles={queuedFiles.length > 0}
+                      onSendFiles={() => {
+                        // Auto-send first queued file for demo
+                        const firstQueued = queuedFiles.find(f => f.status === 'queued');
+                        if (firstQueued) {
+                          handleSendFile(firstQueued.id, device.id);
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </ToolCard>
 
             {/* File Transfer Zone */}
-            {currentUser.isInRoom && devices.length > 0 ? (
-              <FileDropZone 
-                onFileSelect={handleFileSelect}
-                maxFileSize={maxFileSize}
-              />
-            ) : (
-              <Card>
-                <CardContent className="text-center py-12 text-muted-foreground">
-                  <div className="space-y-3">
-                    <div className="text-6xl mb-4">📁</div>
-                    <h3 className="text-lg font-medium">Zona de Transferencia</h3>
-                    <p>Para transferir archivos necesitas:</p>
-                    <div className="text-sm space-y-1">
-                      <p>✓ Estar en una sala activa</p>
-                      <p>✓ Tener dispositivos conectados</p>
-                    </div>
-                    {!currentUser.isInRoom && (
-                      <p className="text-primary font-medium mt-4">
-                        👆 Crea o únete a una sala para comenzar
-                      </p>
-                    )}
+            <ToolCard
+              title="Zona de Transferencia"
+              description="Arrastra archivos aquí para compartir"
+            >
+              {currentUser.isInRoom && devices.length > 0 ? (
+                <FileDropZone 
+                  onFileSelect={handleFileSelect}
+                  maxFileSize={maxFileSize}
+                />
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Upload className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="font-medium text-slate-900 dark:text-white mb-2">Zona de Transferencia</p>
+                  <p className="text-sm mb-3">Para transferir archivos necesitas:</p>
+                  <div className="text-sm space-y-1">
+                    <p>✓ Estar en una sala activa</p>
+                    <p>✓ Tener dispositivos conectados</p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              )}
+            </ToolCard>
           </div>
 
           {/* Right Column - User Profile & Transfers */}
@@ -517,9 +475,7 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
             <UserProfileSection
               username={currentUser.username}
               roomCode={currentUser.roomCode}
-              theme={currentUser.theme}
               onUsernameChange={handleUsernameChange}
-              onThemeChange={handleThemeChange}
               onGenerateNewUsername={handleGenerateNewUsername}
               onJoinRoom={handleJoinRoom}
             />
@@ -536,22 +492,20 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
 
             {/* Active Transfers */}
             {transfers.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Transferencias Activas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {transfers.map((transfer) => (
-                      <TransferProgressCard
-                        key={transfer.id}
-                        transfer={transfer}
-                        onCancel={() => handleCancelTransfer(transfer.id)}
-                      />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <ToolCard
+                title="Transferencias Activas"
+                description="Archivos en proceso de transferencia"
+              >
+                <div className="space-y-3">
+                  {transfers.map((transfer) => (
+                    <TransferProgressCard
+                      key={transfer.id}
+                      transfer={transfer}
+                      onCancel={() => handleCancelTransfer(transfer.id)}
+                    />
+                  ))}
+                </div>
+              </ToolCard>
             )}
           </div>
         </div>
@@ -565,6 +519,5 @@ export function EvarisdropDashboard({ appName, maxFileSize, networkName }: Evari
           onReject={handleRejectTransfer}
         />
       </div>
-    </div>
   );
 }

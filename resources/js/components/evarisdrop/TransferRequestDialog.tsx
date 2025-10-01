@@ -138,7 +138,7 @@ export function TransferRequestDialog({
           <Button
             onClick={handleAccept}
             disabled={isAccepting || isRejecting}
-            className="flex-1"
+            className="flex-1 bg-institutional hover:bg-institutional/90"
           >
             {isAccepting ? (
               <>

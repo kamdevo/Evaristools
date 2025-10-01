@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { File, Send, X, Clock, ArrowRight } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ToolCard from '@/components/ToolCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -48,36 +48,27 @@ export function FileQueueCard({ queuedFiles, devices, onSendFile, onRemoveFile }
 
   if (queuedFiles.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <File className="w-5 h-5" />
-            Cola de Archivos (0)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6 text-muted-foreground">
-            <File className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No hay archivos en cola</p>
-            <p className="text-sm">Selecciona archivos para agregarlos a la cola</p>
-          </div>
-        </CardContent>
-      </Card>
+      <ToolCard
+        title="Cola de Archivos (0)"
+        description="Archivos listos para enviar"
+      >
+        <div className="text-center py-6 text-muted-foreground">
+          <File className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-medium text-slate-900 dark:text-white mb-1">No hay archivos en cola</p>
+          <p className="text-sm">Selecciona archivos para agregarlos a la cola</p>
+        </div>
+      </ToolCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <File className="w-5 h-5" />
-          Cola de Archivos ({queuedFiles.length})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {queuedFiles.map((queuedFile) => (
-            <div key={queuedFile.id} className="flex items-center gap-3 p-3 border rounded-lg">
+    <ToolCard
+      title={`Cola de Archivos (${queuedFiles.length})`}
+      description="Archivos listos para enviar"
+    >
+      <div className="space-y-4">
+        {queuedFiles.map((queuedFile) => (
+          <div key={queuedFile.id} className="flex items-center gap-3 p-3 border rounded-lg glass-card border-white/30 bg-white/60 dark:bg-slate-800/60">
               <File className="w-8 h-8 text-primary" />
               
               <div className="flex-1 min-w-0">
@@ -118,7 +109,7 @@ export function FileQueueCard({ queuedFiles, devices, onSendFile, onRemoveFile }
 
                   <Button
                     size="sm"
-                    variant="default"
+                    className="bg-institutional hover:bg-institutional/90"
                     onClick={() => handleSendFile(queuedFile.id)}
                     disabled={!selectedDevices[queuedFile.id]}
                   >
@@ -149,10 +140,9 @@ export function FileQueueCard({ queuedFiles, devices, onSendFile, onRemoveFile }
               >
                 <X className="w-4 h-4" />
               </Button>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        ))}
+      </div>
+    </ToolCard>
   );
 }

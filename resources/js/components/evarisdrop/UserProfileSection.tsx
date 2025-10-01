@@ -1,20 +1,16 @@
 import { useState } from 'react';
-import { User, Edit2, Check, X, Moon, Sun, LogIn } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Edit2, Check, X, LogIn } from 'lucide-react';
+import ToolCard from '@/components/ToolCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RoomCodeDisplay } from './RoomCodeDisplay';
-import { ThemeMode } from '@/types/evarisdrop/enums';
 
 interface UserProfileSectionProps {
   username: string;
   roomCode: string;
-  theme: ThemeMode;
   onUsernameChange: (username: string) => void;
-  onThemeChange: (theme: ThemeMode) => void;
   onGenerateNewUsername: () => void;
   onJoinRoom?: (roomCode: string) => void;
 }
@@ -22,9 +18,7 @@ interface UserProfileSectionProps {
 export function UserProfileSection({ 
   username, 
   roomCode, 
-  theme,
   onUsernameChange, 
-  onThemeChange,
   onGenerateNewUsername,
   onJoinRoom 
 }: UserProfileSectionProps) {
@@ -45,7 +39,7 @@ export function UserProfileSection({
     setIsEditingUsername(false);
   };
 
-  const isDarkMode = theme === ThemeMode.DARK;
+
 
   const handleJoinRoom = () => {
     if (joinRoomCode.trim() && onJoinRoom) {
@@ -56,14 +50,10 @@ export function UserProfileSection({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
-          Perfil de Usuario
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <ToolCard
+      title="Perfil de Usuario"
+      description="Tu información de sesión"
+    >
         {/* Username Section */}
         <div className="space-y-2">
           <Label htmlFor="username">Nombre de Usuario</Label>
@@ -102,7 +92,7 @@ export function UserProfileSection({
             variant="outline" 
             size="sm" 
             onClick={onGenerateNewUsername}
-            className="text-xs"
+            className="text-xs border-institutional text-institutional hover:bg-institutional/10"
           >
             Generar Usuario Aleatorio
           </Button>
@@ -115,7 +105,7 @@ export function UserProfileSection({
           {onJoinRoom && (
             <Dialog open={isJoinRoomOpen} onOpenChange={setIsJoinRoomOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="w-full">
+                <Button size="sm" className="w-full bg-institutional hover:bg-institutional/90">
                   <LogIn className="w-4 h-4 mr-2" />
                   Unirse a Sala
                 </Button>
@@ -138,7 +128,11 @@ export function UserProfileSection({
                       }}
                     />
                   </div>
-                  <Button onClick={handleJoinRoom} className="w-full" disabled={!joinRoomCode.trim()}>
+                  <Button 
+                    onClick={handleJoinRoom} 
+                    className="w-full bg-institutional hover:bg-institutional/90" 
+                    disabled={!joinRoomCode.trim()}
+                  >
                     Unirse a Sala
                   </Button>
                 </div>
@@ -147,27 +141,7 @@ export function UserProfileSection({
           )}
         </div>
 
-        {/* Theme Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {isDarkMode ? (
-              <Moon className="w-4 h-4" />
-            ) : (
-              <Sun className="w-4 h-4" />
-            )}
-            <Label htmlFor="theme-toggle">
-              {isDarkMode ? 'Modo Oscuro' : 'Modo Claro'}
-            </Label>
-          </div>
-          <Switch
-            id="theme-toggle"
-            checked={isDarkMode}
-            onCheckedChange={(checked) => 
-              onThemeChange(checked ? ThemeMode.DARK : ThemeMode.LIGHT)
-            }
-          />
-        </div>
-      </CardContent>
-    </Card>
+
+    </ToolCard>
   );
 }
