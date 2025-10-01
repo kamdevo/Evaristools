@@ -36,21 +36,25 @@ export default function CropPDF() {
     const startTour = () => {
         const driverObj = driver({
             showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
             steps: [
                 {
-                    element: '[data-tour="upload-zone"]',
+                    element: '[data-tour="upload"]',
                     popover: {
-                        title: 'Paso 1: Seleccionar PDF',
-                        description: 'Arrastra tu archivo PDF aquí o haz clic para seleccionarlo. El archivo debe ser menor a 50MB.',
-                        side: 'bottom',
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Selecciona o arrastra tu archivo PDF. Verás una vista previa de la primera página para ajustar los márgenes de recorte.',
+                        side: 'right',
                         align: 'start'
                     }
                 },
                 {
                     element: '[data-tour="options"]',
                     popover: {
-                        title: 'Paso 2: Configurar Márgenes',
-                        description: 'Ajusta los márgenes usando los presets rápidos o valores personalizados. Observa la vista previa para verificar el recorte.',
+                        title: 'Paso 2: Ajustar Márgenes',
+                        description: 'Configura los márgenes de recorte para cada lado (superior, inferior, izquierdo, derecho). Los cambios se verán en la vista previa.',
                         side: 'left',
                         align: 'start'
                     }
@@ -58,8 +62,8 @@ export default function CropPDF() {
                 {
                     element: '[data-tour="actions"]',
                     popover: {
-                        title: 'Paso 3: Recortar PDF',
-                        description: 'Haz clic en "Recortar PDF" para aplicar los márgenes configurados. Luego podrás descargar el archivo procesado.',
+                        title: 'Paso 3: Aplicar Recorte',
+                        description: 'Haz clic en "Aplicar Recorte" para procesar el PDF. El recorte se aplicará a todas las páginas del documento.',
                         side: 'left',
                         align: 'start'
                     }
@@ -199,8 +203,8 @@ export default function CropPDF() {
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {/* Left Column: File Upload & Messages */}
-                            <div className="space-y-6">
+                            {/* Left Column */}
+                            <div className="space-y-6" data-tour="upload">
                                 {/* Upload Section */}
                                 {!pdfFile && (
                                     <ToolCard title="Seleccionar PDF" data-tour="upload-zone">
@@ -290,121 +294,121 @@ export default function CropPDF() {
                             <div className="space-y-6">
                                 {/* Crop Options */}
                                 <ToolCard title="Opciones de Recorte" data-tour="options">
-                                        <div className="space-y-4">
-                                            {/* Uniform Margin Presets */}
-                                            <div className="space-y-2">
-                                                <Label>Márgenes Uniformes (Puntos)</Label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <Button
-                                                        onClick={() => setUniformMargin(10)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        10pt
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => setUniformMargin(20)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        20pt
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => setUniformMargin(30)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        30pt
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => setUniformMargin(50)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        50pt
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => setUniformMargin(0)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                    >
-                                                        Sin Recorte
-                                                    </Button>
-                                                </div>
+                                    <div className="space-y-4">
+                                        {/* Uniform Margin Presets */}
+                                        <div className="space-y-2">
+                                            <Label>Márgenes Uniformes (Puntos)</Label>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    onClick={() => setUniformMargin(10)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    10pt
+                                                </Button>
+                                                <Button
+                                                    onClick={() => setUniformMargin(20)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    20pt
+                                                </Button>
+                                                <Button
+                                                    onClick={() => setUniformMargin(30)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    30pt
+                                                </Button>
+                                                <Button
+                                                    onClick={() => setUniformMargin(50)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    50pt
+                                                </Button>
+                                                <Button
+                                                    onClick={() => setUniformMargin(0)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                >
+                                                    Sin Recorte
+                                                </Button>
                                             </div>
+                                        </div>
 
-                                            {/* Individual Margins */}
-                                            <div className="space-y-3">
-                                                <Label>Márgenes Personalizados (en puntos)</Label>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="margin-top" className="text-sm">Superior</Label>
-                                                        <Input
-                                                            id="margin-top"
-                                                            type="number"
-                                                            min="0"
-                                                            max="200"
-                                                            value={margins.top}
-                                                            onChange={(e) => setMargins({ ...margins, top: parseInt(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="margin-right" className="text-sm">Derecho</Label>
-                                                        <Input
-                                                            id="margin-right"
-                                                            type="number"
-                                                            min="0"
-                                                            max="200"
-                                                            value={margins.right}
-                                                            onChange={(e) => setMargins({ ...margins, right: parseInt(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="margin-bottom" className="text-sm">Inferior</Label>
-                                                        <Input
-                                                            id="margin-bottom"
-                                                            type="number"
-                                                            min="0"
-                                                            max="200"
-                                                            value={margins.bottom}
-                                                            onChange={(e) => setMargins({ ...margins, bottom: parseInt(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="margin-left" className="text-sm">Izquierdo</Label>
-                                                        <Input
-                                                            id="margin-left"
-                                                            type="number"
-                                                            min="0"
-                                                            max="200"
-                                                            value={margins.left}
-                                                            onChange={(e) => setMargins({ ...margins, left: parseInt(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
+                                        {/* Individual Margins */}
+                                        <div className="space-y-3">
+                                            <Label>Márgenes Personalizados (en puntos)</Label>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="margin-top" className="text-sm">Superior</Label>
+                                                    <Input
+                                                        id="margin-top"
+                                                        type="number"
+                                                        min="0"
+                                                        max="200"
+                                                        value={margins.top}
+                                                        onChange={(e) => setMargins({ ...margins, top: parseInt(e.target.value) || 0 })}
+                                                    />
                                                 </div>
-                                            </div>
-
-                                            {/* Visual Preview */}
-                                            <div className="p-6 bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
-                                                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Vista Previa del Recorte:</p>
-                                                <div className="relative h-48 bg-white dark:bg-slate-700 rounded flex items-center justify-center">
-                                                    <div
-                                                        className="bg-blue-100 dark:bg-blue-900/30 border-2 border-dashed border-institutional flex items-center justify-center"
-                                                        style={{
-                                                            marginTop: `${margins.top / 2}px`,
-                                                            marginRight: `${margins.right / 2}px`,
-                                                            marginBottom: `${margins.bottom / 2}px`,
-                                                            marginLeft: `${margins.left / 2}px`,
-                                                            width: `calc(100% - ${(margins.left + margins.right) / 2}px)`,
-                                                            height: `calc(100% - ${(margins.top + margins.bottom) / 2}px)`
-                                                        }}
-                                                    >
-                                                        <p className="text-xs text-slate-600 dark:text-slate-400">Área visible</p>
-                                                    </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="margin-right" className="text-sm">Derecho</Label>
+                                                    <Input
+                                                        id="margin-right"
+                                                        type="number"
+                                                        min="0"
+                                                        max="200"
+                                                        value={margins.right}
+                                                        onChange={(e) => setMargins({ ...margins, right: parseInt(e.target.value) || 0 })}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="margin-bottom" className="text-sm">Inferior</Label>
+                                                    <Input
+                                                        id="margin-bottom"
+                                                        type="number"
+                                                        min="0"
+                                                        max="200"
+                                                        value={margins.bottom}
+                                                        onChange={(e) => setMargins({ ...margins, bottom: parseInt(e.target.value) || 0 })}
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="margin-left" className="text-sm">Izquierdo</Label>
+                                                    <Input
+                                                        id="margin-left"
+                                                        type="number"
+                                                        min="0"
+                                                        max="200"
+                                                        value={margins.left}
+                                                        onChange={(e) => setMargins({ ...margins, left: parseInt(e.target.value) || 0 })}
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
-                                    </ToolCard>
+
+                                        {/* Visual Preview */}
+                                        <div className="p-6 bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600">
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Vista Previa del Recorte:</p>
+                                            <div className="relative h-48 bg-white dark:bg-slate-700 rounded flex items-center justify-center">
+                                                <div
+                                                    className="bg-blue-100 dark:bg-blue-900/30 border-2 border-dashed border-institutional flex items-center justify-center"
+                                                    style={{
+                                                        marginTop: `${margins.top / 2}px`,
+                                                        marginRight: `${margins.right / 2}px`,
+                                                        marginBottom: `${margins.bottom / 2}px`,
+                                                        marginLeft: `${margins.left / 2}px`,
+                                                        width: `calc(100% - ${(margins.left + margins.right) / 2}px)`,
+                                                        height: `calc(100% - ${(margins.top + margins.bottom) / 2}px)`
+                                                    }}
+                                                >
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400">Área visible</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </ToolCard>
 
                                 {/* Action Buttons */}
                                 <ToolCard title="Acciones" data-tour="actions">

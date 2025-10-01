@@ -1,11 +1,14 @@
 import { useState, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Loader2, Download, RotateCw, CheckCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { RotateCw, RotateCcw, Upload, Download, Loader2, FileText, HelpCircle, CheckCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import { PDFDocument, degrees } from 'pdf-lib';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface PageRotation {
     pageNumber: number;
@@ -22,6 +25,46 @@ export default function RotatePDF() {
     const [error, setError] = useState<string>('');
     const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Selecciona o arrastra tu archivo PDF. El sistema cargará el documento para rotación.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Elegir Rotación',
+                        description: 'Selecciona el ángulo de rotación (90°, 180°, 270°). Puedes aplicarlo a todas las páginas o solo páginas específicas.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Aplicar Rotación',
+                        description: 'Haz clic en "Aplicar Rotación" para procesar el PDF. El archivo rotado se descargará automáticamente.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = async (files: FileList) => {
         const file = files[0];
@@ -171,8 +214,8 @@ export default function RotatePDF() {
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {/* Left Column: File Upload and Info */}
-                            <div className="space-y-6">
+                            {/* Left Column: File Upload & Messages */}
+                            <div className="space-y-6" data-tour="upload">
                                 {!pdfFile && (
                                 <ToolCard title="Seleccionar PDF">
                                     <FileUploadZone
@@ -218,14 +261,6 @@ export default function RotatePDF() {
                                     </ToolCard>
                                 )}
 
-                                {error && (
-                                    <ToolCard title="Error">
-                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                            <p className="text-red-800 dark:text-red-200">{error}</p>
-                                        </div>
-                                    </ToolCard>
-                                )}
-
                                 {isRotated && rotatedPdfUrl && (
                                     <ToolCard title="¡PDF Rotado Exitosamente!">
                                         <div className="space-y-4">
@@ -263,15 +298,15 @@ export default function RotatePDF() {
                                 )}
                             </div>
 
-                            {/* Right Column: Controls and Actions */}
+                            {/* Right Column: Always visible */}
                             <div className="space-y-6">
-                                <ToolCard title="Controles de Rotación">
+                                <ToolCard title="Opciones de Rotación" data-tour="options">
                                         <div className="space-y-4">
                                             {/* Rotate All Pages */}
                                             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                                <h4 className="font-medium text-slate-900 dark:text-white mb-3">
+                                                <Label className="text-base mb-3 block">
                                                     Rotar Todas las Páginas
-                                                </h4>
+                                                </Label>
                                                 <div className="flex gap-2">
                                                     <Button
                                                         onClick={() => rotateAllPages(90)}
@@ -301,9 +336,9 @@ export default function RotatePDF() {
 
                                             {/* Individual Page Controls */}
                                             <div>
-                                                <h4 className="font-medium text-slate-900 dark:text-white mb-3">
+                                                <Label className="text-base mb-3 block">
                                                     Rotar Páginas Individuales
-                                                </h4>
+                                                </Label>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
                                                     {Array.from({ length: pageCount }, (_, i) => (
                                                         <div
@@ -343,7 +378,8 @@ export default function RotatePDF() {
                                         </div>
                                 </ToolCard>
 
-                                <ToolCard title="Acciones">
+                                <ToolCard title="Acciones" data-tour="actions">
+                                    <div className="space-y-3">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={applyRotations}
@@ -369,29 +405,17 @@ export default function RotatePDF() {
                                                 disabled={isProcessing}
                                             >
                                                 <Upload className="mr-2 h-4 w-4" />
-                                                Seleccionar Otro PDF
+                                                Seleccionar Otro
                                             </Button>
                                         </div>
-                                </ToolCard>
-
-                                <ToolCard title="Instrucciones">
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">1.</span>
-                                            <span>Selecciona el PDF que deseas rotar</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">2.</span>
-                                            <span>Usa los controles para rotar todas o páginas individuales</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">3.</span>
-                                            <span>Aplica las rotaciones al documento</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">4.</span>
-                                            <span>Descarga el PDF con las rotaciones aplicadas</span>
-                                        </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
                                     </div>
                                 </ToolCard>
                             </div>

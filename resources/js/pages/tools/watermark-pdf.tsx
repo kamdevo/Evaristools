@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, Loader2, Download, Droplet, CheckCircle } from 'lucide-react';
+import { Droplet, Upload, Download, Loader2, FileText, Type, Image as ImageIcon, HelpCircle, CheckCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
 import { PDFDocument, rgb, StandardFonts, degrees } from 'pdf-lib';
+import { driver } from 'driver.js';
+import 'driver.js/dist/driver.css';
 
 interface WatermarkOptions {
     text: string;
@@ -33,6 +35,46 @@ export default function WatermarkPDF() {
         color: '#808080'
     });
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const startTour = () => {
+        const driverObj = driver({
+            showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
+            steps: [
+                {
+                    element: '[data-tour="upload"]',
+                    popover: {
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Selecciona el archivo PDF al que deseas agregar una marca de agua.',
+                        side: 'right',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="options"]',
+                    popover: {
+                        title: 'Paso 2: Configurar Marca de Agua',
+                        description: 'Escribe el texto de la marca de agua, ajusta su posición, tamaño, opacidad y rotación.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                },
+                {
+                    element: '[data-tour="actions"]',
+                    popover: {
+                        title: 'Paso 3: Aplicar Marca de Agua',
+                        description: 'Haz clic en "Aplicar Marca de Agua" para procesar. La marca se aplicará a todas las páginas del PDF.',
+                        side: 'left',
+                        align: 'start'
+                    }
+                }
+            ]
+        });
+        driverObj.drive();
+    };
 
     const handleFileSelect = (files: FileList) => {
         const file = files[0];
@@ -194,10 +236,10 @@ export default function WatermarkPDF() {
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-                            {/* Left Column: File Upload and Info */}
+                            {/* Left Column: File Upload & Messages */}
                             <div className="space-y-6">
                                 {!pdfFile && (
-                                <ToolCard title="Seleccionar PDF">
+                                <ToolCard title="Seleccionar PDF" data-tour="upload">
                                     <FileUploadZone
                                         onFileSelect={handleFileSelect}
                                         acceptedTypes=".pdf"
@@ -241,14 +283,6 @@ export default function WatermarkPDF() {
                                     </ToolCard>
                                 )}
 
-                                {error && (
-                                    <ToolCard title="Error">
-                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                                            <p className="text-red-800 dark:text-red-200">{error}</p>
-                                        </div>
-                                    </ToolCard>
-                                )}
-
                                 {isWatermarked && watermarkedPdfUrl && (
                                     <ToolCard title="¡Marca de Agua Agregada!">
                                         <div className="space-y-4">
@@ -286,9 +320,10 @@ export default function WatermarkPDF() {
                                 )}
                             </div>
 
-                            {/* Right Column: Options and Actions */}
+                            {/* Right Column: Always visible */}
                             <div className="space-y-6">
-                                <ToolCard title="Opciones de Marca de Agua">
+                                <ToolCard title="Opciones de Marca de Agua" data-tour="options">
+
                                         <div className="space-y-4">
                                             {/* Text */}
                                             <div className="space-y-2">
@@ -400,7 +435,7 @@ export default function WatermarkPDF() {
                                         </div>
                                 </ToolCard>
 
-                                <ToolCard title="Acciones">
+                                <ToolCard title="Acciones" data-tour="actions">
                                         <div className="flex flex-col sm:flex-row gap-4">
                                             <Button
                                                 onClick={addWatermark}
@@ -429,27 +464,14 @@ export default function WatermarkPDF() {
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
-                                </ToolCard>
-
-                                <ToolCard title="Instrucciones">
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">1.</span>
-                                            <span>Selecciona el PDF al que deseas agregar marca de agua</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">2.</span>
-                                            <span>Configura el texto, posición, tamaño y color</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">3.</span>
-                                            <span>Visualiza la marca de agua en la vista previa</span>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <span className="font-medium text-institutional">4.</span>
-                                            <span>Agrega la marca de agua y descarga el PDF</span>
-                                        </div>
-                                    </div>
+                                        <Button
+                                            onClick={startTour}
+                                            variant="outline"
+                                            className="w-full border-institutional text-institutional hover:bg-institutional/10"
+                                        >
+                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            ¿Cómo funciona? - Tour Interactivo
+                                        </Button>
                                 </ToolCard>
                             </div>
                         </div>

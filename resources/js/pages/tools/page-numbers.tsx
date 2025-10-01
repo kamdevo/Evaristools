@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileText, Loader2, Download, Hash, CheckCircle, HelpCircle } from 'lucide-react';
+import { Upload, FileText, Loader2, Download, Hash, HelpCircle, CheckCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -36,6 +36,10 @@ export default function PageNumbers() {
     const startTour = () => {
         const driverObj = driver({
             showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
             steps: [
                 {
                     element: '[data-tour="upload-zone"]',
@@ -239,7 +243,7 @@ export default function PageNumbers() {
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                             {/* Left Column: File Upload & Messages */}
-                            <div className="space-y-6">
+                            <div className="space-y-6" data-tour="upload">
                                 {/* Upload Section */}
                                 {!pdfFile && (
                                     <ToolCard title="Seleccionar PDF" data-tour="upload-zone">

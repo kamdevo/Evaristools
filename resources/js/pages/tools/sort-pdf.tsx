@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, Loader2, Download, ArrowUpDown, CheckCircle, ArrowUp, ArrowDown, Trash2, HelpCircle } from 'lucide-react';
+import { GripVertical, Trash2, Download, Upload, Loader2, FileText, ArrowUpDown, HelpCircle, ArrowUp, ArrowDown, CheckCircle } from 'lucide-react';
 import ToolPageHeader from '@/components/ToolPageHeader';
 import ToolCard from '@/components/ToolCard';
 import FileUploadZone from '@/components/FileUploadZone';
@@ -21,19 +21,22 @@ export default function SortPDF() {
     const [pages, setPages] = useState<PageInfo[]>([]);
     const [sortedPdfUrl, setSortedPdfUrl] = useState<string>('');
     const [error, setError] = useState<string>('');
-    const [dragOver, setDragOver] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const startTour = () => {
         const driverObj = driver({
             showProgress: true,
+            popoverClass: 'driverjs-theme',
+            prevBtnText: 'Anterior',
+            nextBtnText: 'Siguiente',
+            doneBtnText: 'Finalizar',
             steps: [
                 {
-                    element: '[data-tour="upload-zone"]',
+                    element: '[data-tour="upload"]',
                     popover: {
-                        title: 'Paso 1: Seleccionar PDF',
-                        description: 'Arrastra tu archivo PDF aquí o haz clic para seleccionarlo. El archivo debe ser menor a 50MB.',
-                        side: 'bottom',
+                        title: 'Paso 1: Subir PDF',
+                        description: 'Arrastra tu archivo PDF aquí o haz clic para seleccionarlo. El sistema detectará automáticamente el número de páginas.',
+                        side: 'right',
                         align: 'start'
                     }
                 },
@@ -41,7 +44,7 @@ export default function SortPDF() {
                     element: '[data-tour="quick-actions"]',
                     popover: {
                         title: 'Paso 2: Acciones Rápidas',
-                        description: 'Usa "Invertir Orden" para voltear todas las páginas o "Restablecer" para volver al orden original.',
+                        description: 'Una vez que subas tu PDF y veas la lista de páginas, podrás reordenarlas arrastrándolas o usar estas acciones rápidas para invertir el orden o restablecerlo.',
                         side: 'left',
                         align: 'start'
                     }
@@ -49,8 +52,8 @@ export default function SortPDF() {
                 {
                     element: '[data-tour="actions"]',
                     popover: {
-                        title: 'Paso 3: Aplicar Cambios',
-                        description: 'Una vez que hayas organizado las páginas como deseas, haz clic en "Aplicar Orden" para generar el PDF reorganizado.',
+                        title: 'Paso 3: Guardar Cambios',
+                        description: 'Una vez reordenadas las páginas, haz clic en "Guardar PDF Reordenado" para descargar el archivo con el nuevo orden.',
                         side: 'left',
                         align: 'start'
                     }
@@ -182,25 +185,6 @@ export default function SortPDF() {
         }
     };
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragOver(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragOver(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragOver(false);
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileSelect(files);
-        }
-    };
-
     return (
         <>
             <Head title="Ordenar PDF - Evaristools" />
@@ -215,8 +199,8 @@ export default function SortPDF() {
                 <div className="container mx-auto px-4 py-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                            {/* Left Column: File Upload, Info & Page Management */}
-                            <div className="space-y-6">
+                            {/* Left Column: File Upload & Page List */}
+                            <div className="space-y-6" data-tour="upload">
                                 {/* Upload Section */}
                                 {!pdfFile && (
                                     <ToolCard title="Seleccionar PDF" data-tour="upload-zone">
@@ -236,25 +220,6 @@ export default function SortPDF() {
                                     </ToolCard>
                                 )}
 
-                                {/* File Info */}
-                                {pdfFile && pages.length > 0 && !isSorted && (
-                                    <ToolCard title="Archivo Seleccionado">
-                                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                                            <div className="flex items-center space-x-3">
-                                                <FileText className="h-8 w-8 text-institutional" />
-                                                <div>
-                                                    <p className="font-medium text-slate-900 dark:text-white">
-                                                        {pdfFile.name}
-                                                    </p>
-                                                    <p className="text-sm text-slate-600 dark:text-slate-300">
-                                                        {pages.length} {pages.length === 1 ? 'página' : 'páginas'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </ToolCard>
-                                )}
-
                                 {/* Error Message */}
                                 {error && (
                                     <ToolCard title="Error">
@@ -264,9 +229,9 @@ export default function SortPDF() {
                                     </ToolCard>
                                 )}
 
-                                {/* Pages List */}
+                                {/* Page List */}
                                 {pdfFile && pages.length > 0 && !isSorted && (
-                                    <ToolCard title="Organizar Páginas">
+                                    <ToolCard title="Organizar Páginas" data-tour="pages">
                                         <div className="space-y-2 max-h-96 overflow-y-auto">
                                             {pages.map((page, index) => (
                                                 <div
@@ -350,7 +315,7 @@ export default function SortPDF() {
                                 )}
                             </div>
 
-                            {/* Right Column: Always visible Quick Actions, Actions & Instructions */}
+                            {/* Right Column: Options, Actions */}
                             <div className="space-y-6">
                                 {/* Quick Actions */}
                                 <ToolCard title="Acciones Rápidas" data-tour="quick-actions">
@@ -384,12 +349,12 @@ export default function SortPDF() {
                                             >
                                                 {isProcessing ? (
                                                     <>
-                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                                         Procesando...
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <ArrowUpDown className="mr-2 h-4 w-4" />
+                                                        <ArrowUpDown className="h-4 w-4 mr-2" />
                                                         Aplicar Orden
                                                     </>
                                                 )}
@@ -400,7 +365,7 @@ export default function SortPDF() {
                                                 className="flex-1"
                                                 disabled={isProcessing}
                                             >
-                                                <Upload className="mr-2 h-4 w-4" />
+                                                <Upload className="h-4 w-4 mr-2" />
                                                 Seleccionar Otro PDF
                                             </Button>
                                         </div>
@@ -409,7 +374,7 @@ export default function SortPDF() {
                                             variant="outline"
                                             className="w-full border-institutional text-institutional hover:bg-institutional/10"
                                         >
-                                            <HelpCircle className="mr-2 h-4 w-4" />
+                                            <HelpCircle className="h-4 w-4 mr-2" />
                                             ¿Cómo funciona? - Tour Interactivo
                                         </Button>
                                     </div>
