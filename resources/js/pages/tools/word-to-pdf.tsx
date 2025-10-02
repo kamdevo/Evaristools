@@ -303,7 +303,6 @@ export default function WordToPDF() {
                             <div className="space-y-6">
                                 <ToolCard title="Acciones" data-tour="actions">
                                         <div className="space-y-3">
-                                        <div className="flex flex-col sm:flex-row gap-3">
                                                 <Button
                                                     onClick={convertToPDF}
                                                     disabled={isProcessing || !wordFile}
@@ -321,16 +320,6 @@ export default function WordToPDF() {
                                                         </>
                                                     )}
                                                 </Button>
-                                                <Button
-                                                    onClick={resetTool}
-                                                    variant="outline"
-                                                    className="w-full"
-                                                    disabled={isProcessing || !wordFile}
-                                                >
-                                                    <Upload className="mr-2 h-4 w-4" />
-                                                    Seleccionar Otro
-                                                </Button>
-                                            </div>
                                         <Button
                                             onClick={startTour}
                                             variant="outline"

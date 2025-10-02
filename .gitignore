@@ -1,7 +1,6 @@
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules
-/public/build
 /public/hot
 /public/storage
 /resources/js/actions
@@ -9,6 +8,7 @@
 /resources/js/wayfinder
 /storage/*.key
 /storage/pail
+/storage/app/google/credentials.json
 /vendor
 .DS_Store
 .env
