@@ -310,7 +310,7 @@ export default function PageNumbers() {
                                             <div className="flex flex-col sm:flex-row gap-4">
                                                 <Button
                                                     onClick={downloadNumberedPDF}
-                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                    className="flex-1 bg-institutional hover:bg-institutional/90 text-white"
                                                 >
                                                     <Download className="mr-2 h-4 w-4" />
                                                     Descargar PDF Numerado
@@ -417,34 +417,23 @@ export default function PageNumbers() {
                                 {/* Action Buttons */}
                                 <ToolCard title="Acciones" data-tour="actions">
                                     <div className="space-y-3">
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <Button
-                                                onClick={addPageNumbers}
-                                                disabled={isProcessing || !pdfFile}
-                                                className="flex-1 bg-institutional hover:bg-institutional/90"
-                                            >
-                                                {isProcessing ? (
-                                                    <>
-                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                        Agregando Números...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Hash className="mr-2 h-4 w-4" />
-                                                        Agregar Números de Página
-                                                    </>
-                                                )}
-                                            </Button>
-                                            <Button
-                                                onClick={resetTool}
-                                                variant="outline"
-                                                className="flex-1"
-                                                disabled={isProcessing}
-                                            >
-                                                <Upload className="mr-2 h-4 w-4" />
-                                                Seleccionar Otro PDF
-                                            </Button>
-                                        </div>
+                                        <Button
+                                            onClick={addPageNumbers}
+                                            disabled={isProcessing || !pdfFile}
+                                            className="w-full bg-institutional hover:bg-institutional/90"
+                                        >
+                                            {isProcessing ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Agregando Números...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Hash className="mr-2 h-4 w-4" />
+                                                    Agregar Números de Página
+                                                </>
+                                            )}
+                                        </Button>
                                         <Button
                                             onClick={startTour}
                                             variant="outline"

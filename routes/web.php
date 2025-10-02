@@ -65,10 +65,6 @@ Route::prefix('tools')->name('tools.')->group(function () {
         return Inertia::render('tools/crop-pdf');
     })->name('crop-pdf');
     
-    Route::get('unlock-pdf', function () {
-        return Inertia::render('tools/unlock-pdf');
-    })->name('unlock-pdf');
-    
     Route::get('powerpoint-to-pdf', function () {
         return Inertia::render('tools/powerpoint-to-pdf');
     })->name('powerpoint-to-pdf');
@@ -99,9 +95,12 @@ Route::prefix('tools')->name('tools.')->group(function () {
     
     // API endpoints for tools
     Route::post('word-to-pdf/convert', [App\Http\Controllers\WordToPDFController::class, 'convert'])->name('word-to-pdf.convert');
+    Route::post('powerpoint-to-pdf/convert', [App\Http\Controllers\PowerPointToPDFController::class, 'convert'])->name('powerpoint-to-pdf.convert');
+    Route::post('excel-to-pdf/convert', [App\Http\Controllers\ExcelToPDFController::class, 'convert'])->name('excel-to-pdf.convert');
     Route::post('resume-document/generate', [App\Http\Controllers\ResumeDocumentController::class, 'generate'])->name('resume-document.generate');
     Route::post('sign-pdf/sign', [App\Http\Controllers\SignPDFController::class, 'sign'])->name('sign-pdf.sign');
     Route::post('protect-pdf/protect', [App\Http\Controllers\ProtectPDFController::class, 'protect'])->name('protect-pdf.protect');
+    Route::post('ocr-extract/extract', [App\Http\Controllers\OCRController::class, 'extract'])->name('ocr-extract.extract');
     
     // CUVS endpoints
     Route::post('cuvs/process-json-sos', [App\Http\Controllers\CuvsController::class, 'processJsonSOS'])->name('cuvs.process-json-sos');

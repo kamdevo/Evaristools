@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Upload, Download, Trash2, Loader2, Eye, FileText, HelpCircle } from 'lucide-react';
-import Tesseract from 'tesseract.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -58,7 +58,7 @@ export default function ImagesToWord() {
                     element: '[data-tour="upload"]',
                     popover: {
                         title: 'Paso 1: Subir Imágenes',
-                        description: 'Selecciona imágenes con texto que deseas convertir a Word. El OCR extraerá el texto automáticamente.',
+                        description: 'Selecciona imágenes con texto que deseas convertir a Word. Usamos OCR.space API de alta calidad para extraer el texto automáticamente.',
                         side: 'right',
                         align: 'start'
                     }
@@ -141,27 +141,37 @@ export default function ImagesToWord() {
     };
 
     const extractTextFromImage = async (imageFile: ImageFile): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            Tesseract.recognize(
-                imageFile.file,
-                'spa+eng',
-                {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            setImages(prev => prev.map(img => 
-                                img.id === imageFile.id 
-                                    ? { ...img, isProcessing: true }
-                                    : img
-                            ));
-                        }
-                    }
-                }
-            ).then(({ data: { text } }) => {
-                resolve(text.trim());
-            }).catch(error => {
-                reject(error);
+        try {
+            // Mark image as processing
+            setImages(prev => prev.map(img => 
+                img.id === imageFile.id 
+                    ? { ...img, isProcessing: true }
+                    : img
+            ));
+
+            // Create FormData to send file to backend
+            const formData = new FormData();
+            formData.append('file', imageFile.file);
+            formData.append('language', 'spa+eng');
+            
+            // Send to OCR.space backend
+            const response = await axios.post('/tools/ocr-extract/extract', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                timeout: 120000 // 2 minutes timeout
             });
-        });
+            
+            if (response.data.success) {
+                return response.data.text.trim();
+            } else {
+                throw new Error(response.data.error || 'Error al extraer texto');
+            }
+        } catch (error: any) {
+            console.error(`Error extracting text from ${imageFile.name}:`, error);
+            throw new Error(error.response?.data?.error || error.message || 'Error al extraer texto');
+        }
     };
 
     const processImagesAndCreateDocument = async () => {
@@ -174,7 +184,9 @@ export default function ImagesToWord() {
         setProgress({ current: 0, total: images.length, message: 'Iniciando procesamiento...' });
 
         try {
-            // Extract text from all images
+            // Extract text from all images - use a temporary array to store results
+            const processedImages: ImageFile[] = [];
+            
             for (let i = 0; i < images.length; i++) {
                 const image = images[i];
                 setProgress({ 
@@ -185,16 +197,24 @@ export default function ImagesToWord() {
 
                 try {
                     const extractedText = await extractTextFromImage(image);
+                    const updatedImage = { ...image, extractedText, isProcessing: false };
+                    processedImages.push(updatedImage);
+                    
+                    // Update UI state
                     setImages(prev => prev.map(img => 
                         img.id === image.id 
-                            ? { ...img, extractedText, isProcessing: false }
+                            ? updatedImage
                             : img
                     ));
                 } catch (error) {
                     console.error(`Error extracting text from ${image.name}:`, error);
+                    const errorImage = { ...image, error: 'Error al extraer texto', isProcessing: false };
+                    processedImages.push(errorImage);
+                    
+                    // Update UI state
                     setImages(prev => prev.map(img => 
                         img.id === image.id 
-                            ? { ...img, error: 'Error al extraer texto', isProcessing: false }
+                            ? errorImage
                             : img
                     ));
                 }
@@ -240,8 +260,8 @@ export default function ImagesToWord() {
                 })
             );
 
-            // Process each image
-            images.forEach((image, index) => {
+            // Process each image using the temporary array with extracted text
+            processedImages.forEach((image, index) => {
                 // Add image name if enabled
                 if (documentOptions.includeImageNames) {
                     paragraphs.push(
@@ -311,11 +331,8 @@ export default function ImagesToWord() {
                 message: 'Generando descarga...' 
             });
 
-            // Generate and download
-            const buffer = await Packer.toBuffer(doc);
-            const blob = new Blob([buffer], { 
-                type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-            });
+            // Generate and download (using toBlob for browser compatibility)
+            const blob = await Packer.toBlob(doc);
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -331,9 +348,21 @@ export default function ImagesToWord() {
                 message: '¡Documento Word generado exitosamente!' 
             });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating Word document:', error);
-            alert('Error al crear el documento Word. Por favor, inténtalo de nuevo.');
+            
+            // Get detailed error message
+            let errorMessage = 'Error al crear el documento Word.';
+            if (error instanceof Error) {
+                errorMessage += `\n\nDetalles técnicos: ${error.message}`;
+                console.error('Error stack:', error.stack);
+            } else if (typeof error === 'object' && error !== null) {
+                errorMessage += `\n\nDetalles técnicos: ${JSON.stringify(error)}`;
+            } else {
+                errorMessage += `\n\nDetalles técnicos: ${String(error)}`;
+            }
+            
+            alert(errorMessage + '\n\nPor favor, revisa la consola para más información.');
         } finally {
             setIsProcessing(false);
         }

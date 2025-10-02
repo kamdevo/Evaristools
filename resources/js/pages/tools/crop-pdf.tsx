@@ -271,7 +271,7 @@ export default function CropPDF() {
                                             <div className="flex flex-col sm:flex-row gap-4">
                                                 <Button
                                                     onClick={downloadCroppedPDF}
-                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                                                    className="flex-1 bg-institutional hover:bg-institutional/90"
                                                 >
                                                     <Download className="mr-2 h-4 w-4" />
                                                     Descargar PDF Recortado

@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { Head } from '@inertiajs/react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Upload, Download, Copy, Loader2, Eye, HelpCircle, ScanText, StickyNote } from 'lucide-react';
-import { createWorker } from 'tesseract.js';
+import { FileText, Upload, Download, Copy, Loader2, Eye, HelpCircle, ScanText, StickyNote, Check } from 'lucide-react';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import ToolPageHeader from '@/components/ToolPageHeader';
@@ -27,6 +27,7 @@ export default function OCRExtract() {
     const [extractedText, setExtractedText] = useState<string>('');
     const [confidence, setConfidence] = useState<number>(0);
     const [processingStep, setProcessingStep] = useState<string>('');
+    const [isCopied, setIsCopied] = useState(false);
     const [options, setOptions] = useState<OCROptions>({
         language: 'spa+eng',
         outputFormat: 'text'
@@ -133,41 +134,86 @@ export default function OCRExtract() {
         setProgress(0);
         setExtractedText('');
         setConfidence(0);
+        
+        let progressInterval: NodeJS.Timeout | null = null;
 
         try {
-            setProcessingStep('Inicializando OCR...');
+            setProcessingStep('Preparando archivo...');
+            setProgress(10);
             
-            // Create Tesseract worker
-            const worker = await createWorker(options.language, 1, {
-                logger: (m) => {
-                    console.log(m);
-                    if (m.status === 'recognizing text') {
-                        const progressPercent = Math.round(m.progress * 100);
-                        setProgress(progressPercent);
-                        setProcessingStep(`Reconociendo texto... ${progressPercent}%`);
+            // Create FormData to send file to backend
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('language', options.language);
+            
+            setProcessingStep('Extrayendo texto de la imagen... (esto puede tomar hasta 2 minutos)');
+            setProgress(30);
+            
+            // Simulate progress to show activity during long processing
+            progressInterval = setInterval(() => {
+                setProgress(prev => {
+                    if (prev < 85) {
+                        return prev + 1;
+                    }
+                    return prev;
+                });
+            }, 1000);
+            
+            // Send to backend
+            const response = await axios.post('/tools/ocr-extract/extract', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                timeout: 120000, // 120 seconds timeout (2 minutes) - OCR processing can take time for large images
+                onUploadProgress: (progressEvent) => {
+                    if (progressEvent.total) {
+                        const uploadProgress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        if (uploadProgress < 100) {
+                            setProgress(10 + (uploadProgress * 0.2)); // Upload takes 10-30%
+                        }
                     }
                 }
             });
-
-            setProcessingStep('Procesando imagen...');
-
-            // Recognize text
-            const { data: { text, confidence } } = await worker.recognize(file);
             
-            setExtractedText(text);
-            setConfidence(Math.round(confidence));
-            setProcessingStep('¡Texto extraído exitosamente!');
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+            setProgress(90);
+            
+            if (response.data.success) {
+                setExtractedText(response.data.text);
+                setConfidence(response.data.confidence);
+                setProcessingStep('¡Texto extraído exitosamente!');
+                setProgress(100);
+            } else {
+                throw new Error(response.data.error || 'Error al procesar');
+            }
 
-            // Terminate worker
-            await worker.terminate();
-
-        } catch (error) {
+        } catch (error: any) {
+            // Clear progress interval if it exists
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
             console.error('Error extrayendo texto:', error);
-            alert('Error al extraer texto de la imagen. Por favor intenta con otra imagen.');
+            
+            let errorMessage = 'Error al extraer texto de la imagen. Por favor intenta con otra imagen.';
+            
+            if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                errorMessage = '⏱️ El procesamiento está tomando más tiempo del esperado.\n\n💡 Sugerencias:\n• Intenta con una imagen más pequeña\n• Asegúrate de que la imagen sea clara y de buena calidad\n• Verifica tu conexión a internet\n• Si el problema persiste, intenta de nuevo en unos momentos';
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            alert(errorMessage);
             setProcessingStep('Error en el procesamiento');
         } finally {
             setIsProcessing(false);
-            setProgress(100);
+            if (progress !== 100) {
+                setProgress(0);
+            }
         }
     };
 
@@ -191,14 +237,16 @@ export default function OCRExtract() {
 
         try {
             await navigator.clipboard.writeText(extractedText);
-            alert('Texto copiado al portapapeles');
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
         } catch (error) {
             console.error('Error copiando al portapapeles:', error);
             // Fallback for older browsers
             if (textareaRef.current) {
                 textareaRef.current.select();
                 document.execCommand('copy');
-                alert('Texto copiado al portapapeles');
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 2000);
             }
         }
     };
@@ -273,16 +321,6 @@ export default function OCRExtract() {
                                             </div>
                                         ) : undefined}
                                     />
-                                    
-                                    {file && (
-                                        <Button
-                                            onClick={reset}
-                                            variant="outline"
-                                            className="w-full"
-                                        >
-                                            Cambiar Archivo
-                                        </Button>
-                                    )}
                                 </ToolCard>
 
                                 {/* Preview Section */}
@@ -334,9 +372,19 @@ export default function OCRExtract() {
                                                     onClick={copyToClipboard}
                                                     variant="outline"
                                                     className="flex-1"
+                                                    disabled={isCopied}
                                                 >
-                                                    <Copy className="h-4 w-4 mr-2" />
-                                                    Copiar
+                                                    {isCopied ? (
+                                                        <>
+                                                            <Check className="h-4 w-4 mr-2" />
+                                                            Copiado
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="h-4 w-4 mr-2" />
+                                                            Copiar
+                                                        </>
+                                                    )}
                                                 </Button>
                                                 <Button
                                                     onClick={downloadText}

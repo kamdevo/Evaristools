@@ -12,7 +12,6 @@ import ProtectPDF from './pages/tools/protect-pdf';
 import SortPDF from './pages/tools/sort-pdf';
 import CropPDF from './pages/tools/crop-pdf';
 import PageNumbers from './pages/tools/page-numbers';
-import UnlockPDF from './pages/tools/unlock-pdf';
 
 // Tool components mapping
 const toolComponents: Record<string, ComponentType> = {
@@ -26,7 +25,6 @@ const toolComponents: Record<string, ComponentType> = {
   'sort-pdf': SortPDF,
   'crop-pdf': CropPDF,
   'page-numbers': PageNumbers,
-  'unlock-pdf': UnlockPDF,
 };
 
 export default function App() {

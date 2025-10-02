@@ -12,11 +12,9 @@ import ProgressBar from '@/components/ProgressBar';
 import { driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 
-// Configure PDF.js worker for Vite/local development
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url
-).toString();
+// Configure PDF.js worker using unpkg CDN (compatible with Vite)
+// Using the same version as the installed pdfjs-dist package
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface ImageData {
     id: string;
