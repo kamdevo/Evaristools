@@ -10,16 +10,20 @@ use Exception;
 
 class ResumeDocumentController extends Controller
 {
-    private $openRouterApiKey;
-    private $model = 'deepseek/deepseek-chat-v3.1:free';
+    private $openRouterApiKey = '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';
+    private $model = 'qwen/qwen3-235b-a22b:free';
     
     public function __construct()
     {
-        $this->openRouterApiKey = env('OPENROUTER_API_KEY');
+        // API key is now hardcoded for this tool
+        // Using Qwen3 235B A22B which has 131K context and optimized reasoning capabilities
     }
     
     public function generate(Request $request)
     {
+        // Extend PHP execution time for AI processing (can take longer than 60s)
+        set_time_limit(180); // 3 minutes
+        
         try {
             $request->validate([
                 'file' => 'required|file|mimes:pdf,docx,txt|max:10240', // 10MB max (removed .doc for compatibility)
@@ -40,12 +44,13 @@ class ResumeDocumentController extends Controller
                 ], 400);
             }
 
-            // Limit text to avoid token limits (approximately 100,000 characters = ~25,000 tokens)
-            if (strlen($text) > 100000) {
-                $text = substr($text, 0, 100000) . '...';
+            // Limit text to avoid token limits (approximately 120,000 characters = ~30,000 tokens)
+            // Qwen3 235B supports 131K context with good performance
+            if (strlen($text) > 120000) {
+                $text = substr($text, 0, 120000) . '...';
             }
 
-            // Generate summary using DeepSeek via OpenRouter
+            // Generate summary using Qwen3 235B via OpenRouter
             $summary = $this->generateSummaryWithAI($text, $length, $language);
 
             return response()->json([
@@ -136,8 +141,8 @@ class ResumeDocumentController extends Controller
         ];
 
         $prompt = $language === 'es'
-            ? "Por favor, resume el siguiente documento. {$lengthInstructions[$length]} El resumen debe capturar los puntos principales, ideas clave y conclusiones importantes. Mantén un tono profesional y objetivo.\n\nDocumento:\n{$text}\n\nResumen:"
-            : "Please summarize the following document. {$lengthInstructions[$length]} The summary should capture the main points, key ideas, and important conclusions. Maintain a professional and objective tone.\n\nDocument:\n{$text}\n\nSummary:";
+            ? "Por favor, resume el siguiente documento. {$lengthInstructions[$length]} El resumen debe capturar los puntos principales, ideas clave y conclusiones importantes. Mantén un tono profesional y objetivo. Responde ÚNICAMENTE con el resumen final, sin incluir procesos de pensamiento o etiquetas adicionales.\n\nDocumento:\n{$text}\n\nResumen:"
+            : "Please summarize the following document. {$lengthInstructions[$length]} The summary should capture the main points, key ideas, and important conclusions. Maintain a professional and objective tone. Respond ONLY with the final summary, without including thinking processes or additional tags.\n\nDocument:\n{$text}\n\nSummary:";
 
         try {
             $response = Http::withHeaders([
@@ -167,11 +172,34 @@ class ResumeDocumentController extends Controller
                 throw new Exception('Respuesta inválida de la API');
             }
 
-            return trim($data['choices'][0]['message']['content']);
+            $content = $data['choices'][0]['message']['content'];
+            
+            // Clean thinking tags from Qwen3 model response
+            $content = $this->cleanThinkingTags($content);
+            
+            return trim($content);
 
         } catch (Exception $e) {
             \Log::error('Error calling OpenRouter API: ' . $e->getMessage());
             throw new Exception('Error al generar el resumen con IA: ' . $e->getMessage());
         }
+    }
+    
+    /**
+     * Clean thinking tags from model response
+     */
+    private function cleanThinkingTags($content)
+    {
+        // Remove <think>...</think> blocks (including nested content)
+        $content = preg_replace('/<think>.*?<\/think>/s', '', $content);
+        
+        // Remove any remaining thinking-related tags
+        $content = preg_replace('/<\/?think>/i', '', $content);
+        
+        // Clean up extra whitespace and line breaks
+        $content = preg_replace('/\n\s*\n\s*\n/', "\n\n", $content);
+        $content = trim($content);
+        
+        return $content;
     }
 }
