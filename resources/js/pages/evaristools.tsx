@@ -23,7 +23,7 @@ interface Tool {
     description: string;
     icon: React.ComponentType<{ className?: string; size?: number }>;
     category: string;
-    popular?: boolean;
+    // Note: popularity is now handled dynamically via backend
 }
 
 const toolCategories: ToolCategory[] = [
@@ -45,8 +45,7 @@ const toolCategories: ToolCategory[] = [
                 title: 'Generador de QR',
                 description: 'Crea códigos QR personalizados con logo',
                 icon: QrCode,
-                category: 'pdf-tools',
-                popular: true
+                category: 'pdf-tools'
             },
             {
                 id: 'merge-pdfs',
@@ -190,16 +189,14 @@ const toolCategories: ToolCategory[] = [
                 title: 'Imágenes a Word',
                 description: 'Convierte imágenes a documentos Word editables',
                 icon: BookA,
-                category: 'image-tools',
-                popular: true
+                category: 'image-tools'
             },
             {
                 id: 'ocr-extract',
                 title: 'OCR y Extracción de Texto',
                 description: 'Extrae texto de imágenes mediante OCR',
                 icon: StickyNote,
-                category: 'image-tools',
-                popular: true
+                category: 'image-tools'
             }
         ]
     },
@@ -214,16 +211,14 @@ const toolCategories: ToolCategory[] = [
                 title: 'CUVS - Rips JSON HUV',
                 description: 'Sistema de conversión y procesamiento de archivos RIPS JSON para diferentes EPS',
                 icon: Activity,
-                category: 'hospital-tools',
-                popular: true
+                category: 'hospital-tools'
             },
             {
                 id: 'evarisdrop',
                 title: 'Evarisdrop',
                 description: 'Sistema de transferencia de archivos entre dispositivos en tiempo real',
                 icon: Share2,
-                category: 'hospital-tools',
-                popular: true
+                category: 'hospital-tools'
             }
         ]
     }
@@ -388,7 +383,7 @@ export default function Evaristools({ shared }: { shared: SharedData }) {
                             ) : (
                                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {filteredTools.map((tool) => {
-                                        const isPopular = isToolPopular(tool.id) || tool.popular;
+                                        const isPopular = isToolPopular(tool.id);
                                         return (
                                             <Card
                                                 key={tool.id}
@@ -464,7 +459,7 @@ export default function Evaristools({ shared }: { shared: SharedData }) {
 
                                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                     {category.tools.map((tool) => {
-                                        const isPopular = isToolPopular(tool.id) || tool.popular;
+                                        const isPopular = isToolPopular(tool.id);
                                         return (
                                             <Card
                                                 key={tool.id}

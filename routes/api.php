@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EvarisdropRoomController;
 use App\Http\Controllers\EvarisdropFileTransferController;
+use App\Http\Controllers\ToolPopularityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +34,13 @@ Route::middleware('web')->group(function () {
         Route::get('{transferId}/status', [EvarisdropFileTransferController::class, 'getTransferStatus'])->name('status');
         Route::get('{transferId}/download', [EvarisdropFileTransferController::class, 'downloadFile'])->name('download');
     });
+});
+
+// Tool Popularity API Routes
+Route::prefix('tools')->name('api.tools.')->group(function () {
+    Route::post('click', [ToolPopularityController::class, 'recordClick'])->name('click');
+    Route::get('popular', [ToolPopularityController::class, 'getPopularTools'])->name('popular');
+    Route::get('{toolId}/stats', [ToolPopularityController::class, 'getToolStats'])->name('stats');
 });
 
 // API Health Check

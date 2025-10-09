@@ -31,7 +31,7 @@ class ToolClick extends Model
      * @param int $threshold Cantidad mínima de clics para considerar popular
      * @return array Array de tool_ids populares
      */
-    public static function getPopularTools(int $threshold = 10): array
+    public static function getPopularTools(int $threshold = 5): array
     {
         $last24Hours = Carbon::now()->subDay();
 

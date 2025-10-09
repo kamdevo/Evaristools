@@ -41,8 +41,8 @@ class ToolPopularityController extends Controller
      */
     public function getPopularTools(Request $request): JsonResponse
     {
-        // Umbral de clics para considerar popular (por defecto 10)
-        $threshold = $request->input('threshold', 10);
+        // Umbral de clics para considerar popular (por defecto 5)
+        $threshold = $request->input('threshold', 5);
 
         try {
             $popularTools = ToolClick::getPopularTools($threshold);
