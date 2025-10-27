@@ -10,13 +10,19 @@ use Exception;
 
 class ResumeDocumentController extends Controller
 {
-    private $openRouterApiKey = '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';
-    private $model = 'qwen/qwen3-235b-a22b:free';
+    private $groqApiKey;
+    private $model = 'llama-3.1-8b-instant';
     
     public function __construct()
     {
-        // API key is now hardcoded for this tool
-        // Using Qwen3 235B A22B which has 131K context and optimized reasoning capabilities
+        // Get API key from environment variables for security
+        $this->groqApiKey = env('GROQ_API_KEY');
+        
+        if (empty($this->groqApiKey)) {
+            throw new Exception('GROQ_API_KEY not configured in .env file');
+        }
+        
+        // Using Llama 3.1 8B which is fast, cost-effective and supports large context windows
     }
     
     public function generate(Request $request)
@@ -45,12 +51,12 @@ class ResumeDocumentController extends Controller
             }
 
             // Limit text to avoid token limits (approximately 120,000 characters = ~30,000 tokens)
-            // Qwen3 235B supports 131K context with good performance
+            // Llama 3.1 8B supports large context window of 131,072 tokens
             if (strlen($text) > 120000) {
                 $text = substr($text, 0, 120000) . '...';
             }
 
-            // Generate summary using Qwen3 235B via OpenRouter
+            // Generate summary using Llama 3.1 8B via Groq
             $summary = $this->generateSummaryWithAI($text, $length, $language);
 
             return response()->json([
@@ -146,11 +152,9 @@ class ResumeDocumentController extends Controller
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->openRouterApiKey,
-                'HTTP-Referer' => config('app.url'),
-                'X-Title' => 'Evaristools - HUV',
+                'Authorization' => 'Bearer ' . $this->groqApiKey,
                 'Content-Type' => 'application/json'
-            ])->timeout(120)->post('https://openrouter.ai/api/v1/chat/completions', [
+            ])->timeout(120)->post('https://api.groq.com/openai/v1/chat/completions', [
                 'model' => $this->model,
                 'messages' => [
                     [
@@ -163,7 +167,7 @@ class ResumeDocumentController extends Controller
             ]);
 
             if ($response->failed()) {
-                throw new Exception('Error en la API de OpenRouter: ' . $response->body());
+                throw new Exception('Error en la API de Groq: ' . $response->body());
             }
 
             $data = $response->json();
@@ -174,32 +178,15 @@ class ResumeDocumentController extends Controller
 
             $content = $data['choices'][0]['message']['content'];
             
-            // Clean thinking tags from Qwen3 model response
-            $content = $this->cleanThinkingTags($content);
+            // Clean up extra whitespace and line breaks
+            $content = preg_replace('/\n\s*\n\s*\n/', "\n\n", $content);
+            $content = trim($content);
             
-            return trim($content);
+            return $content;
 
         } catch (Exception $e) {
-            \Log::error('Error calling OpenRouter API: ' . $e->getMessage());
+            \Log::error('Error calling Groq API: ' . $e->getMessage());
             throw new Exception('Error al generar el resumen con IA: ' . $e->getMessage());
         }
-    }
-    
-    /**
-     * Clean thinking tags from model response
-     */
-    private function cleanThinkingTags($content)
-    {
-        // Remove <think>...</think> blocks (including nested content)
-        $content = preg_replace('/<think>.*?<\/think>/s', '', $content);
-        
-        // Remove any remaining thinking-related tags
-        $content = preg_replace('/<\/?think>/i', '', $content);
-        
-        // Clean up extra whitespace and line breaks
-        $content = preg_replace('/\n\s*\n\s*\n/', "\n\n", $content);
-        $content = trim($content);
-        
-        return $content;
     }
 }
