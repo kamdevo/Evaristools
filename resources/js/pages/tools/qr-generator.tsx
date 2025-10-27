@@ -26,11 +26,11 @@ export default function QRGenerator() {
     const [qrData, setQRData] = useState<QRData>({
         text: '',
         size: 256,
-        errorCorrectionLevel: 'M',
-        includeInstitutionalLogo: false,
+        errorCorrectionLevel: 'H',
+        includeInstitutionalLogo: true,
         format: 'png',
         backgroundColor: '#ffffff',
-        foregroundColor: '#000000'
+        foregroundColor: '#2d3e83'
     });
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
@@ -131,42 +131,74 @@ export default function QRGenerator() {
                 // Load institutional logo
                 const logoImg = new Image();
                 logoImg.onload = () => {
-                    const logoSize = Math.floor(size * 0.15);
+                    // Logo más grande y visible (30% del QR)
+                    const logoSize = Math.floor(size * 0.3);
                     const logoX = (size - logoSize) / 2;
                     const logoY = (size - logoSize) / 2;
 
-                    // Draw white circle background for logo
+                    // Crear cuadrado hueco/transparente en el centro del QR
+                    const squareSize = logoSize + 16; // Padding de 8px a cada lado
+                    const squareX = (size - squareSize) / 2;
+                    const squareY = (size - squareSize) / 2;
+
+                    // Dibujar cuadrado blanco con borde redondeado
                     ctx.fillStyle = '#ffffff';
+                    const borderRadius = 8;
                     ctx.beginPath();
-                    ctx.arc(size / 2, size / 2, logoSize / 2 + 8, 0, 2 * Math.PI);
+                    ctx.moveTo(squareX + borderRadius, squareY);
+                    ctx.lineTo(squareX + squareSize - borderRadius, squareY);
+                    ctx.quadraticCurveTo(squareX + squareSize, squareY, squareX + squareSize, squareY + borderRadius);
+                    ctx.lineTo(squareX + squareSize, squareY + squareSize - borderRadius);
+                    ctx.quadraticCurveTo(squareX + squareSize, squareY + squareSize, squareX + squareSize - borderRadius, squareY + squareSize);
+                    ctx.lineTo(squareX + borderRadius, squareY + squareSize);
+                    ctx.quadraticCurveTo(squareX, squareY + squareSize, squareX, squareY + squareSize - borderRadius);
+                    ctx.lineTo(squareX, squareY + borderRadius);
+                    ctx.quadraticCurveTo(squareX, squareY, squareX + borderRadius, squareY);
+                    ctx.closePath();
                     ctx.fill();
 
-                    // Draw subtle border
+                    // Dibujar borde sutil del cuadrado
                     ctx.strokeStyle = '#e5e7eb';
-                    ctx.lineWidth = 1;
+                    ctx.lineWidth = 2;
                     ctx.stroke();
 
-                    // Draw institutional logo
+                    // Dibujar logo institucional PNG centrado
                     ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
 
                     resolve(canvas.toDataURL());
                 };
                 
                 logoImg.onerror = () => {
-                    // Fallback to text if logo fails to load
-                    const logoSize = Math.floor(size * 0.15);
+                    // Fallback a texto si el logo no carga
+                    const logoSize = Math.floor(size * 0.3);
+                    const squareSize = logoSize + 16;
+                    const squareX = (size - squareSize) / 2;
+                    const squareY = (size - squareSize) / 2;
                     
+                    // Cuadrado blanco de fondo
                     ctx.fillStyle = '#ffffff';
+                    const borderRadius = 8;
                     ctx.beginPath();
-                    ctx.arc(size / 2, size / 2, logoSize / 2 + 5, 0, 2 * Math.PI);
+                    ctx.moveTo(squareX + borderRadius, squareY);
+                    ctx.lineTo(squareX + squareSize - borderRadius, squareY);
+                    ctx.quadraticCurveTo(squareX + squareSize, squareY, squareX + squareSize, squareY + borderRadius);
+                    ctx.lineTo(squareX + squareSize, squareY + squareSize - borderRadius);
+                    ctx.quadraticCurveTo(squareX + squareSize, squareY + squareSize, squareX + squareSize - borderRadius, squareY + squareSize);
+                    ctx.lineTo(squareX + borderRadius, squareY + squareSize);
+                    ctx.quadraticCurveTo(squareX, squareY + squareSize, squareX, squareY + squareSize - borderRadius);
+                    ctx.lineTo(squareX, squareY + borderRadius);
+                    ctx.quadraticCurveTo(squareX, squareY, squareX + borderRadius, squareY);
+                    ctx.closePath();
                     ctx.fill();
 
-                    ctx.strokeStyle = '#1e40af';
-                    ctx.lineWidth = 2;
+                    // Borde institucional
+                    ctx.strokeStyle = '#2d3e83';
+                    ctx.lineWidth = 3;
                     ctx.stroke();
 
-                    ctx.fillStyle = '#1e40af';
-                    ctx.font = `bold ${Math.floor(logoSize * 0.3)}px Arial`;
+                    // Texto fallback
+                    ctx.fillStyle = '#2d3e83';
+                    ctx.font = `bold ${Math.floor(logoSize * 0.35)}px Arial`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText('HUV', size / 2, size / 2);
